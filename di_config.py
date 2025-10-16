@@ -31,6 +31,7 @@ def setup_di() -> Injector:
                         DatabaseModule(),
                     ]
                 )
+    assert _injector is not None, "Should be set by now."
     return _injector
 
 

@@ -2,8 +2,8 @@ from injector import Binder, Module, provider, singleton
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from database.connection import DatabaseConnection
 from database.chat_access_repository import ChatAccessRepository
+from database.connection import DatabaseConnection
 
 
 class DatabaseModule(Module):

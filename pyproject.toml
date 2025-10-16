@@ -12,6 +12,7 @@ dependencies = [
     "python-telegram-bot>=22.5",
     "requests>=2.32.5",
     "sqlalchemy>=2.0.44",
+    "undefined>=0.0.8",
 ]
 
 [tool.ruff]
@@ -30,8 +31,9 @@ select = [
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18.2",
     "ruff>=0.14.0",
-    "ty>=0.0.1a22",
+    "types-requests>=2.32.4.20250913",
 ]
 
 
