@@ -1,4 +1,4 @@
-from injector import Module, Binder, singleton
+from injector import Binder, Module, singleton
 
 from settings.bot import TelegramSettings
 from settings.database import DatabaseSettings

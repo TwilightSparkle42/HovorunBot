@@ -4,6 +4,7 @@ from injector import Injector
 
 from ai_client.module import AiClientModule
 from bot_runtime.module import BotRuntimeModule
+from database.module import DatabaseModule
 from errors import ConfigError
 from settings.module import SettingsModule
 
@@ -22,7 +23,14 @@ def setup_di() -> Injector:
     if _injector is None:
         with _injector_lock:
             if _injector is None:
-                _injector = Injector(modules=[SettingsModule(), AiClientModule(), BotRuntimeModule(),])
+                _injector = Injector(
+                    modules=[
+                        SettingsModule(),
+                        AiClientModule(),
+                        BotRuntimeModule(),
+                        DatabaseModule(),
+                    ]
+                )
     return _injector
 
 
