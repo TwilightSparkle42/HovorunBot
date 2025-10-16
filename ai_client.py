@@ -37,6 +37,8 @@ class InfermaticModelDto(pydantic.BaseModel):
 
 
 class InfermaticAiClient(BaseAiClient[InfermaticSettings]):
+    # TODO: Introduce a provider-agnostic client registry so different AI providers can reuse shared orchestration
+    #  logic instead of duplicating this class.
     def __init__(self, settings: Inject[InfermaticSettings]) -> None:
         super().__init__(settings)
 

@@ -23,6 +23,8 @@ class BotRuntime:
 
     def add_handlers(self) -> None:
         # Register command handlers
+        # TODO: Generalize handler registration by injecting a configurable list of command/message handlers
+        #  instead of hardcoding them here.
         self._application.add_handler(CommandHandler("start", self.start_command))
         self._application.add_handler(CommandHandler("known_models", self.known_models_command))
 
@@ -44,6 +46,8 @@ class BotRuntime:
     # Message handler for plain text messages
     async def handle_message(self, update: Update, context: Context):
         user_message = update.message.text.lower()
+        # TODO: Replace hard-coded pattern matching with a pluggable responder pipeline so new triggers can be added
+        # without modifying this method.
         match user_message:
             case user_message if "hey bro" in user_message:
                 await self._ask_ai(update, user_message)
