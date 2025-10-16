@@ -5,7 +5,9 @@ description = "Add your description here"
 requires-python = ">=3.14"
 dependencies = [
     "environs>=14.3.0",
+    "injector>=0.22.0",
     "pydantic>=2.12.2",
+    "pydantic-settings>=2.11.0",
     "python-telegram-bot>=22.5",
     "requests>=2.32.5",
 ]

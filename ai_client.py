@@ -3,13 +3,15 @@ from io import StringIO
 
 import pydantic
 import requests
+from injector import Inject
+from pydantic_settings import BaseSettings
 
-from settings import Settings
+from settings.infermatic import InfermaticSettings
 
 
-class BaseAiClient(ABC):
-    def __init__(self) -> None:
-        self._settings = Settings()
+class BaseAiClient[TSettings: BaseSettings](ABC):
+    def __init__(self, settings: TSettings) -> None:
+        self._settings = settings
 
     @abstractmethod
     async def get_known_models(self) -> str:
@@ -34,7 +36,10 @@ class InfermaticModelDto(pydantic.BaseModel):
 # TODO: Implement DTO for specifying requests for Infermatic AI
 
 
-class InfermaticAiClient(BaseAiClient):
+class InfermaticAiClient(BaseAiClient[InfermaticSettings]):
+    def __init__(self, settings: Inject[InfermaticSettings]) -> None:
+        super().__init__(settings)
+
     async def get_known_models(self) -> str:
         response = requests.get(
             "https://api.totalgpt.ai/v1/models",
@@ -51,14 +56,21 @@ class InfermaticAiClient(BaseAiClient):
 
     async def answer(self, message: str) -> str:
         response = requests.post(
-            "https://api.totalgpt.ai/v1/completions",
+            "https://api.totalgpt.ai/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {self._settings.infermatic_api_key}",
                 "Content-Type": "application/json",
             },
             json={
                 "model": "Llama-3.2-11B-Vision-Instruct",
-                "prompt": message,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You must answer the user's question in same tone as the user asked."
+                        "You are forbidden to cut sentences in the middle of the answer.",
+                    },
+                    {"role": "user", "content": message},
+                ],
                 # TODO: Temporary hard-coded parameters for testing. Implement ways to configure them.
                 "max_tokens": 300,
                 "temperature": 0.7,
@@ -67,4 +79,4 @@ class InfermaticAiClient(BaseAiClient):
             },
         )
         response.raise_for_status()
-        return response.json()["choices"][0]["text"]
+        return response.json()["choices"][0]["message"]["content"]

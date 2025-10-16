@@ -1,18 +1,22 @@
 import logging
 
+from injector import Inject
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from ai_client import InfermaticAiClient
 from bot_types import Context
-from settings import Settings
+from errors import ConfigError
+from settings.bot import TelegramSettings
 
 
 class BotRuntime:
-    def __init__(self) -> None:
-        settings = Settings()
-        self._application = Application.builder().token(settings.telegram_token).build()
-        self._ai_client = InfermaticAiClient()
+    def __init__(self, telegram_settings: Inject[TelegramSettings], ai_client: Inject[InfermaticAiClient]) -> None:
+        self._settings = telegram_settings
+        if self._settings.telegram_token is None:
+            raise ConfigError("Telegram token is not provided, bot cannot be started.")
+        self._application = Application.builder().token(self._settings.telegram_token).build()
+        self._ai_client = ai_client
         self.add_handlers()
         self._logger = logging.getLogger(__name__)
         self._logger.setLevel(logging.INFO)
@@ -40,7 +44,6 @@ class BotRuntime:
     # Message handler for plain text messages
     async def handle_message(self, update: Update, context: Context):
         user_message = update.message.text.lower()
-        print(user_message)
         match user_message:
             case user_message if "hey bro" in user_message:
                 await self._ask_ai(update, user_message)

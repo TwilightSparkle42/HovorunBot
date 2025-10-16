@@ -1,8 +1,10 @@
 from bot_runtime import BotRuntime
+from di_config import setup_di, get_injector
 
 
 def main() -> None:
-    bot_runtime = BotRuntime()
+    injector = setup_di()
+    bot_runtime = injector.get(BotRuntime)
     bot_runtime.run()
 
 
