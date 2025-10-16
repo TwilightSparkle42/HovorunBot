@@ -1,23 +1,38 @@
-import injector
+from threading import Lock
 
-from settings.bot import TelegramSettings
-from settings.infermatic import InfermaticSettings
+from injector import Injector
 
-_CONTAINER: injector.Injector | None = None
+from ai_client.module import AiClientModule
+from bot_runtime.module import BotRuntimeModule
+from errors import ConfigError
+from settings.module import SettingsModule
 
-
-def setup_di() -> injector.Injector:
-    global _CONTAINER
-    if _CONTAINER is None:
-        _CONTAINER = injector.Injector()
-        _CONTAINER.binder.bind(TelegramSettings, to=TelegramSettings(), scope=injector.singleton)
-        _CONTAINER.binder.bind(InfermaticSettings, to=InfermaticSettings(), scope=injector.singleton)
-    return _CONTAINER
+_injector: Injector | None = None
+_injector_lock = Lock()
 
 
-def get_injector() -> injector.Injector:
-    """Return the global injector, initializing it if necessary."""
-    global _CONTAINER
-    if _CONTAINER is None:
-        return setup_di()
-    return _CONTAINER
+def setup_di() -> Injector:
+    """
+    Lazily construct and memoise the application's Injector instance.
+
+    Returns:
+        Injector: The configured Injector singleton.
+    """
+    global _injector
+    if _injector is None:
+        with _injector_lock:
+            if _injector is None:
+                _injector = Injector(modules=[SettingsModule(), AiClientModule(), BotRuntimeModule(),])
+    return _injector
+
+
+def get_injector() -> Injector:
+    """
+    Return the previously configured global Injector instance.
+
+    Raises:
+        ConfigError: If the injector was not initialised yet.
+    """
+    if _injector is None:
+        raise ConfigError("Injector is not initialised. Call setup_di() first.")
+    return _injector

@@ -1,5 +1,5 @@
 from bot_runtime import BotRuntime
-from di_config import setup_di, get_injector
+from di_config import setup_di
 
 
 def main() -> None:

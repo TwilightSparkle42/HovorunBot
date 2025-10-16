@@ -1,29 +1,11 @@
-from abc import ABC, abstractmethod
 from io import StringIO
 
 import pydantic
 import requests
 from injector import Inject
-from pydantic_settings import BaseSettings
 
+from ai_client.base import BaseAiClient
 from settings.infermatic import InfermaticSettings
-
-
-class BaseAiClient[TSettings: BaseSettings](ABC):
-    def __init__(self, settings: TSettings) -> None:
-        self._settings = settings
-
-    @abstractmethod
-    async def get_known_models(self) -> str:
-        """
-        Returns a list of known models as a string with human-readable formatted ids
-        """
-        pass
-
-    @abstractmethod
-    async def answer(self, message: str) -> str:
-        """Answer to a user message with a response from the AI model"""
-        pass
 
 
 class InfermaticModelDto(pydantic.BaseModel):
@@ -68,8 +50,10 @@ class InfermaticAiClient(BaseAiClient[InfermaticSettings]):
                 "messages": [
                     {
                         "role": "system",
-                        "content": "You must answer the user's question in same tone as the user asked."
-                        "You are forbidden to cut sentences in the middle of the answer.",
+                        "content": (
+                            "You must answer the user's question in same tone as the user asked."
+                            "You are forbidden to cut sentences in the middle of the answer."
+                        ),
                     },
                     {"role": "user", "content": message},
                 ],
