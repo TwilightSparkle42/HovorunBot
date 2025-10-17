@@ -12,6 +12,7 @@ from database.base import BaseModel
 
 class ChatAccess(BaseModel):
     __tablename__ = "chat_access"
+    DEFAULT_PROVIDER = "Infermatic"
 
     id: Mapped[PyUUID] = mapped_column(
         SqlUuid,
@@ -24,4 +25,10 @@ class ChatAccess(BaseModel):
         nullable=False,
         default=False,
         server_default=false(),
+    )
+    provider: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default=DEFAULT_PROVIDER,
+        server_default=DEFAULT_PROVIDER,
     )

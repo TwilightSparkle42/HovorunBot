@@ -6,7 +6,7 @@ from injector import Inject
 from telegram import Bot, Update, User
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from ai_client import InfermaticAiClient
+from ai_client.base import AiClientRegistry, BaseAiClient
 from bot_types import Context
 from database.chat_access_repository import ChatAccessRepository
 from database.models import ChatAccess
@@ -18,14 +18,14 @@ class BotRuntime:
     def __init__(
         self,
         telegram_settings: Inject[TelegramSettings],
-        ai_client: Inject[InfermaticAiClient],
+        ai_registry: Inject[AiClientRegistry],
         chat_access_repository: Inject[ChatAccessRepository],
     ) -> None:
         self._settings = telegram_settings
         if self._settings.telegram_token is None:
             raise ConfigError("Telegram token is not provided, bot cannot be started.")
         self._application = Application.builder().token(self._settings.telegram_token).build()
-        self._ai_client = ai_client
+        self._ai_registry = ai_registry
         self._chat_access_repository = chat_access_repository
         self.add_handlers()
         self._logger = logging.getLogger(__name__)
@@ -36,7 +36,6 @@ class BotRuntime:
         # TODO: Generalize handler registration by injecting a configurable list of command/message handlers
         #  instead of hardcoding them here.
         self._application.add_handler(CommandHandler("start", self.start_command))
-        self._application.add_handler(CommandHandler("known_models", self.known_models_command))
 
         # Register message handlers (filters for text messages not starting with '/')
         self._application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
@@ -58,17 +57,6 @@ class BotRuntime:
             return
         await update.message.reply_text("Hello! I am your bot. How can I help you?")
 
-    async def known_models_command(self, update: Update, _: Context):
-        record = self._ensure_chat_access(update)
-        if update.message is None:
-            return
-        if record is None:
-            return
-        if not record.allowed:
-            await self._notify_not_allowed(update)
-            return
-        await update.message.reply_text(str(await self._ai_client.get_known_models()))
-
     # Message handler for plain text messages
     async def handle_message(self, update: Update, context: Context):
         record = self._ensure_chat_access(update)
@@ -85,16 +73,20 @@ class BotRuntime:
             return
         # TODO: Replace hard-coded pattern matching with a pluggable responder pipeline so new triggers can be added
         # without modifying this method.
+        message_chain: Sequence[tuple[str, str]] | None = None
         match user_message:
             case user_message if "hey bro" in user_message:
                 message_chain = await self._collect_reply_chain(update, context.bot)
-                await self._ask_ai(update, message_chain)
             case _ if (
                 update.message.reply_to_message
                 and self._is_same_user(update.message.reply_to_message.from_user, context.bot)  # type: ignore[union-attr]
             ):
                 message_chain = await self._collect_reply_chain(update, context.bot)
-                await self._ask_ai(update, message_chain)
+        if message_chain is None:
+            return
+
+        ai_client = self._resolve_ai_client(record)
+        await self._ask_ai(update, message_chain, ai_client)
 
     def _is_same_user(self, user1: User | Bot, user2: User | Bot) -> bool:
         return user1.id == user2.id
@@ -115,9 +107,20 @@ class BotRuntime:
             current_message = current_message.reply_to_message
         return result
 
-    async def _ask_ai(self, update: Update, message: Sequence[tuple[str, str]]) -> None:
-        answer = await self._ai_client.answer(message)
+    async def _ask_ai(
+        self,
+        update: Update,
+        message: Sequence[tuple[str, str]],
+        ai_client: BaseAiClient,
+    ) -> None:
+        answer = await ai_client.answer(message)
         await update.message.reply_text(answer)  # type: ignore[union-attr]
+
+    def _resolve_ai_client(self, record: ChatAccess) -> BaseAiClient:
+        provider = record.provider or ChatAccess.DEFAULT_PROVIDER
+        if not self._ai_registry.contains(provider):
+            raise ConfigError(f"AI provider '{provider}' is not registered.")
+        return self._ai_registry.get(provider)
 
     def _ensure_chat_access(self, update: Update) -> ChatAccess | None:
         chat = update.effective_chat

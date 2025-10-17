@@ -21,7 +21,7 @@ class ChatAccessRepository:
             if instance is not None:
                 return instance
 
-            instance = ChatAccess(chat_id=chat_id)
+            instance = ChatAccess(chat_id=chat_id, provider=ChatAccess.DEFAULT_PROVIDER)
             session.add(instance)
 
             try:

@@ -1,4 +1,3 @@
-from io import StringIO
 from typing import Sequence
 
 import pydantic
@@ -20,24 +19,8 @@ class InfermaticModelDto(pydantic.BaseModel):
 
 
 class InfermaticAiClient(BaseAiClient[InfermaticSettings]):
-    # TODO: Introduce a provider-agnostic client registry so different AI providers can reuse shared orchestration
-    #  logic instead of duplicating this class.
     def __init__(self, settings: Inject[InfermaticSettings]) -> None:
         super().__init__(settings)
-
-    async def get_known_models(self) -> str:
-        response = requests.get(
-            "https://api.totalgpt.ai/v1/models",
-            headers={"Authorization": f"Bearer {self._settings.infermatic_api_key}"},
-        )
-        raw_data = response.json()["data"]
-        data = [InfermaticModelDto.model_validate(item) for item in raw_data]
-        string_io = StringIO()
-        string_io.write("Provider: Infermatic AI\n")
-        string_io.write("Models:\n")
-        for item in data:
-            string_io.write(f"  - {item.id}\n")
-        return string_io.getvalue()
 
     async def answer(self, message_chain: Sequence[tuple[str, str]]) -> str:
         messages = [
