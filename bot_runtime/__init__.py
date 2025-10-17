@@ -1,12 +1,10 @@
 import logging
-from functools import partial
-from typing import Sequence
 
 from injector import Inject
-from telegram import Bot, Update, User
+from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from ai_client.base import AiClientRegistry, BaseAiClient
+from bot_runtime.message_handlers.base import HandlersCollection
 from bot_types import Context
 from database.chat_access_repository import ChatAccessRepository
 from database.models import ChatAccess
@@ -18,14 +16,14 @@ class BotRuntime:
     def __init__(
         self,
         telegram_settings: Inject[TelegramSettings],
-        ai_registry: Inject[AiClientRegistry],
+        handlers: Inject[HandlersCollection],
         chat_access_repository: Inject[ChatAccessRepository],
     ) -> None:
         self._settings = telegram_settings
         if self._settings.telegram_token is None:
             raise ConfigError("Telegram token is not provided, bot cannot be started.")
         self._application = Application.builder().token(self._settings.telegram_token).build()
-        self._ai_registry = ai_registry
+        self._handlers = handlers
         self._chat_access_repository = chat_access_repository
         self.add_handlers()
         self._logger = logging.getLogger(__name__)
@@ -59,68 +57,15 @@ class BotRuntime:
 
     # Message handler for plain text messages
     async def handle_message(self, update: Update, context: Context):
-        record = self._ensure_chat_access(update)
-        if record is None:
+        chat_settings = self._ensure_chat_access(update)
+        print([t.__class__.__name__ for t in self._handlers._objects])
+        for handler in self._handlers:
+            if not handler.can_handle(update, context, chat_settings):
+                print(f"Handler {handler.__class__.__name__} does not handle the message.")
+                continue
+            print(f"Handling message with handler: {handler.__class__.__name__}")
+            await handler.handle(update, context, chat_settings)
             return
-        if update.message is None or update.message.text is None:
-            return
-        user_message = update.message.text.lower()
-        if user_message.startswith("#test"):
-            await update.message.reply_text(f"Hi there! You said: {user_message}")
-            return
-        if not record.allowed:
-            await self._notify_not_allowed(update)
-            return
-        # TODO: Replace hard-coded pattern matching with a pluggable responder pipeline so new triggers can be added
-        # without modifying this method.
-        message_chain: Sequence[tuple[str, str]] | None = None
-        match user_message:
-            case user_message if "hey bro" in user_message:
-                message_chain = await self._collect_reply_chain(update, context.bot)
-            case _ if (
-                update.message.reply_to_message
-                and self._is_same_user(update.message.reply_to_message.from_user, context.bot)  # type: ignore[union-attr]
-            ):
-                message_chain = await self._collect_reply_chain(update, context.bot)
-        if message_chain is None:
-            return
-
-        ai_client = self._resolve_ai_client(record)
-        await self._ask_ai(update, message_chain, ai_client)
-
-    def _is_same_user(self, user1: User | Bot, user2: User | Bot) -> bool:
-        return user1.id == user2.id
-
-    async def _collect_reply_chain(self, update: Update, app: Bot) -> Sequence[tuple[str, str]]:
-        result = []
-        is_bot_message = partial(self._is_same_user, app)
-        if is_bot_message(update.message.from_user):
-            result.append(("assistant", update.message.text))
-        else:
-            result.append((update.message.from_user.name, update.message.text))
-        current_message = update.message
-        while current_message.reply_to_message:
-            if is_bot_message(current_message.reply_to_message.from_user):
-                result.append(("assistant", current_message.reply_to_message.text))
-            else:
-                result.append((current_message.reply_to_message.from_user.name, current_message.reply_to_message.text))
-            current_message = current_message.reply_to_message
-        return result
-
-    async def _ask_ai(
-        self,
-        update: Update,
-        message: Sequence[tuple[str, str]],
-        ai_client: BaseAiClient,
-    ) -> None:
-        answer = await ai_client.answer(message)
-        await update.message.reply_text(answer)  # type: ignore[union-attr]
-
-    def _resolve_ai_client(self, record: ChatAccess) -> BaseAiClient:
-        provider = record.provider or ChatAccess.DEFAULT_PROVIDER
-        if not self._ai_registry.contains(provider):
-            raise ConfigError(f"AI provider '{provider}' is not registered.")
-        return self._ai_registry.get(provider)
 
     def _ensure_chat_access(self, update: Update) -> ChatAccess | None:
         chat = update.effective_chat
