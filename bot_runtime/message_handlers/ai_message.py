@@ -29,14 +29,13 @@ class AiMessageHandler(BaseHandler):
         reply_to = message.reply_to_message
         return bool(reply_to and reply_to.from_user and self._is_same_user(reply_to.from_user, context.bot))
 
-    async def handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> bool:
+    async def handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> None:
         assert chat_settings is not None, "Chat access record is required."
         message = cast(Message, update.message)
         message_chain = await self._collect_reply_chain(update, context.bot)
         ai_client = self._resolve_ai_client(chat_settings)
         answer = await ai_client.answer(message_chain)
         await message.reply_text(answer)
-        return True
 
     def _resolve_ai_client(self, record: ChatAccess) -> BaseAiClient:
         provider = record.provider or ChatAccess.DEFAULT_PROVIDER
