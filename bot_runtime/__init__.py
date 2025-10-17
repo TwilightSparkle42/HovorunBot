@@ -4,19 +4,20 @@ from injector import Inject
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from bot_runtime.message_handlers.base import HandlersCollection
+from bot_runtime.message_handlers.base import HandlersRegistry
 from bot_types import Context
 from database.chat_access_repository import ChatAccessRepository
 from database.models import ChatAccess
 from errors import ConfigError
 from settings.bot import TelegramSettings
+from utils.dependable import sort_topologically
 
 
 class BotRuntime:
     def __init__(
         self,
         telegram_settings: Inject[TelegramSettings],
-        handlers: Inject[HandlersCollection],
+        handlers: Inject[HandlersRegistry],
         chat_access_repository: Inject[ChatAccessRepository],
     ) -> None:
         self._settings = telegram_settings
@@ -58,8 +59,8 @@ class BotRuntime:
     # Message handler for plain text messages
     async def handle_message(self, update: Update, context: Context):
         chat_settings = self._ensure_chat_access(update)
-        print([t.__class__.__name__ for t in self._handlers._objects])
-        for handler in self._handlers:
+        for handler_cls in sort_topologically(self._handlers.keys()):
+            handler = self._handlers.get(handler_cls)
             if not handler.can_handle(update, context, chat_settings):
                 print(f"Handler {handler.__class__.__name__} does not handle the message.")
                 continue

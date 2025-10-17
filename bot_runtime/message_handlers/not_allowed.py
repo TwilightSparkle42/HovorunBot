@@ -6,9 +6,12 @@ from bot_types import Context
 from database.models import ChatAccess
 
 from .base import BaseHandler
+from .empty_chat_settings import EmptyChatSettingsHandler
 
 
 class NotAllowedHandler(BaseHandler):
+    DEPENDENCIES = (EmptyChatSettingsHandler,)
+
     def can_handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> bool:
         return chat_settings is not None and chat_settings.allowed is False
 
