@@ -1,7 +1,9 @@
 import logging
+from functools import partial
+from typing import Sequence
 
 from injector import Inject
-from telegram import Update
+from telegram import Bot, Update, User
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from ai_client import InfermaticAiClient
@@ -85,13 +87,35 @@ class BotRuntime:
         # without modifying this method.
         match user_message:
             case user_message if "hey bro" in user_message:
-                await self._ask_ai(update, user_message)
+                message_chain = await self._collect_reply_chain(update, context.bot)
+                await self._ask_ai(update, message_chain)
             case _ if (
-                update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id  # type: ignore[union-attr]
+                update.message.reply_to_message
+                and self._is_same_user(update.message.reply_to_message.from_user, context.bot)  # type: ignore[union-attr]
             ):
-                await self._ask_ai(update, user_message)
+                message_chain = await self._collect_reply_chain(update, context.bot)
+                await self._ask_ai(update, message_chain)
 
-    async def _ask_ai(self, update: Update, message: str):
+    def _is_same_user(self, user1: User | Bot, user2: User | Bot) -> bool:
+        return user1.id == user2.id
+
+    async def _collect_reply_chain(self, update: Update, app: Bot) -> Sequence[tuple[str, str]]:
+        result = []
+        is_bot_message = partial(self._is_same_user, app)
+        if is_bot_message(update.message.from_user):
+            result.append(("assistant", update.message.text))
+        else:
+            result.append((update.message.from_user.name, update.message.text))
+        current_message = update.message
+        while current_message.reply_to_message:
+            if is_bot_message(current_message.reply_to_message.from_user):
+                result.append(("assistant", current_message.reply_to_message.text))
+            else:
+                result.append((current_message.reply_to_message.from_user.name, current_message.reply_to_message.text))
+            current_message = current_message.reply_to_message
+        return result
+
+    async def _ask_ai(self, update: Update, message: Sequence[tuple[str, str]]) -> None:
         answer = await self._ai_client.answer(message)
         await update.message.reply_text(answer)  # type: ignore[union-attr]
 
