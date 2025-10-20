@@ -4,6 +4,7 @@ from injector import Injector
 
 from ai_client.module import AiClientModule
 from bot_runtime.module import BotRuntimeModule
+from cache.module import CacheModule
 from database.module import DatabaseModule
 from errors import ConfigError
 from settings.module import SettingsModule
@@ -29,6 +30,7 @@ def setup_di() -> Injector:
                         AiClientModule(),
                         BotRuntimeModule(),
                         DatabaseModule(),
+                        CacheModule(),
                     ]
                 )
     assert _injector is not None, "Should be set by now."

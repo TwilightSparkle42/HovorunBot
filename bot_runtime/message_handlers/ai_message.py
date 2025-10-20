@@ -11,11 +11,11 @@ from errors import ConfigError
 from settings.bot import TelegramSettings
 
 from .base import BaseHandler
-from .test_message import TestMessageHandler
+from .summarize_message import SummarizeMessageHandler
 
 
 class AiMessageHandler(BaseHandler):
-    DEPENDENCIES = (TestMessageHandler,)
+    DEPENDENCIES = (SummarizeMessageHandler,)
 
     def __init__(self, ai_registry: Inject[AiClientRegistry], bot_settings: Inject[TelegramSettings]) -> None:
         self._ai_registry = ai_registry

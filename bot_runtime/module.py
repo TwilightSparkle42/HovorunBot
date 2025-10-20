@@ -7,6 +7,7 @@ from .message_handlers.base import HandlersRegistry
 from .message_handlers.empty_chat_settings import EmptyChatSettingsHandler
 from .message_handlers.empty_message import EmptyMessageHandler
 from .message_handlers.not_allowed import NotAllowedHandler
+from .message_handlers.summarize_message import SummarizeMessageHandler
 from .message_handlers.test_message import TestMessageHandler
 
 
@@ -23,6 +24,7 @@ class BotRuntimeModule(Module):
             EmptyChatSettingsHandler,
             EmptyMessageHandler,
             NotAllowedHandler,
+            SummarizeMessageHandler,
             TestMessageHandler,
             AiMessageHandler,
         ):

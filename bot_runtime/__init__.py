@@ -6,6 +6,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from bot_runtime.message_handlers.base import HandlersRegistry
 from bot_types import Context
+from cache.telegram_update_storage import TelegramUpdateStorage
 from database.chat_access_repository import ChatAccessRepository
 from database.models import ChatAccess
 from errors import ConfigError
@@ -19,6 +20,7 @@ class BotRuntime:
         telegram_settings: Inject[TelegramSettings],
         handlers: Inject[HandlersRegistry],
         chat_access_repository: Inject[ChatAccessRepository],
+        update_storage: Inject[TelegramUpdateStorage],
     ) -> None:
         self._settings = telegram_settings
         if self._settings.telegram_token is None:
@@ -26,6 +28,7 @@ class BotRuntime:
         self._application = Application.builder().token(self._settings.telegram_token).build()
         self._handlers = handlers
         self._chat_access_repository = chat_access_repository
+        self._update_storage = update_storage
         self.add_handlers()
         self._logger = logging.getLogger(__name__)
         self._logger.setLevel(logging.INFO)
@@ -46,6 +49,7 @@ class BotRuntime:
 
     # Command handler for /start
     async def start_command(self, update: Update, _: Context):
+        await self._update_storage.store(update)
         if update.message is None:
             return
         record = self._ensure_chat_access(update)
@@ -58,6 +62,7 @@ class BotRuntime:
 
     # Message handler for plain text messages
     async def handle_message(self, update: Update, context: Context):
+        await self._update_storage.store(update)
         chat_settings = self._ensure_chat_access(update)
         for handler_cls in sort_topologically(self._handlers.keys()):
             handler = self._handlers.get(handler_cls)

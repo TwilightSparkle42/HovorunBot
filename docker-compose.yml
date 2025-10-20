@@ -1,0 +1,12 @@
+x-valkey-restart: &valkey_restart ${VALKEY_RESTART_POLICY:-unless-stopped}
+
+services:
+  valkey:
+    image: valkey/valkey:7.2
+    container_name: ${VALKEY_CONTAINER_NAME:-valkey}
+    ports:
+      - "${VALKEY_PORT:-6379}:6379"
+    volumes:
+      - "${VALKEY_DATA_DIR:-./cache/valkey}:/data"
+    restart: *valkey_restart
+    command: ["sh", "-c", "${VALKEY_COMMAND:-valkey-server --save 60 1 --appendonly yes}"]
