@@ -1,8 +1,8 @@
 from typing import Sequence
 
 from injector import Inject
-from xai_sdk import AsyncClient
-from xai_sdk.chat import assistant, system, user
+from xai_sdk import AsyncClient  # type: ignore[import-untyped]
+from xai_sdk.chat import assistant, system, user  # type: ignore[import-untyped]
 
 from settings.grok import GrokSettings
 

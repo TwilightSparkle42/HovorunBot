@@ -15,7 +15,7 @@ class BaseHandler(Dependable, ABC):
 
     @abstractmethod
     async def handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> None:
-        """Handle the update and return True when processing should stop."""
+        """Handle the update."""
 
 
 class HandlersRegistry(Registry[type[BaseHandler], BaseHandler]):

@@ -1,15 +1,18 @@
-from typing import Iterator
+from typing import Any, Generic, Iterator, TypeVar
+
+K = TypeVar("K")
+T = TypeVar("T")
 
 
-class Registry[K, T]:
+class Registry(Generic[K, T]):
     """
     Base registry class.
 
     Used to keep references to different types of objects.
     """
 
-    def __init__(self, target_type: type[T]) -> None:
-        self._target_type = target_type
+    def __init__(self, target_type: type[Any]) -> None:
+        self._target_type: type[Any] = target_type
         self._objects: dict[K, T] = {}
 
     def register(self, key: K, to_register: T) -> None:
@@ -33,7 +36,7 @@ class Registry[K, T]:
         return self._objects
 
 
-class Collection[T]:
+class Collection(Generic[T]):
     """
     Base collection class to hold multiple instances of the same parent class.
     """

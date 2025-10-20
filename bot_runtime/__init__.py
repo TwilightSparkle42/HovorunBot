@@ -4,7 +4,7 @@ from injector import Inject
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from bot_runtime.message_handlers.base import HandlersRegistry
+from bot_runtime.message_handlers.base import BaseHandler, HandlersRegistry
 from bot_types import Context
 from cache.telegram_update_storage import TelegramUpdateStorage
 from database.chat_access_repository import ChatAccessRepository
@@ -64,7 +64,8 @@ class BotRuntime:
     async def handle_message(self, update: Update, context: Context):
         await self._update_storage.store(update)
         chat_settings = self._ensure_chat_access(update)
-        for handler_cls in sort_topologically(self._handlers.keys()):
+        handler_types: list[type[BaseHandler]] = sort_topologically(self._handlers.keys())
+        for handler_cls in handler_types:
             handler = self._handlers.get(handler_cls)
             if not handler.can_handle(update, context, chat_settings):
                 print(f"Handler {handler.__class__.__name__} does not handle the message.")

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from graphlib import TopologicalSorter
-from typing import Collection
+from typing import Iterable, TypeVar, cast
 
 
 class Dependable:
@@ -7,20 +9,28 @@ class Dependable:
     Trait which allows an object to specify dependencies.
     """
 
-    DEPENDENCIES: Collection[type[Dependable]] = ()
+    DEPENDENCIES: tuple[type["Dependable"], ...] = ()
 
     @classmethod
-    def get_dependencies(cls) -> Collection[type[Dependable]]:
+    def get_dependencies(cls) -> tuple[type["Dependable"], ...]:
         """Return the dependencies of this class."""
         return cls.DEPENDENCIES
 
 
-def sort_topologically[TDependable: Dependable | type[Dependable]](
-    to_sort: Collection[TDependable] | Collection[type[TDependable]],
-) -> list[TDependable]:
-    graph = {}
-    for item in to_sort:
-        graph[item] = set(item.get_dependencies())
+DependableType = TypeVar("DependableType", bound=type[Dependable])
+
+
+def sort_topologically(to_sort: Iterable[DependableType]) -> list[DependableType]:
+    """
+    Order Dependable subclasses so dependencies always precede dependants.
+    """
+    items = list(to_sort)
+    graph: dict[DependableType, set[DependableType]] = {}
+    for item in items:
+        dependencies = {
+            cast(DependableType, dependency) for dependency in item.get_dependencies() if isinstance(dependency, type)
+        }
+        graph[item] = dependencies
 
     sorter = TopologicalSorter(graph)
     return list(sorter.static_order())
