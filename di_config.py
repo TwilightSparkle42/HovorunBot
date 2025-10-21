@@ -20,20 +20,18 @@ def setup_di() -> Injector:
 
     :returns: The configured :class:`injector.Injector` singleton.
     """
+    module_classes = [
+        SettingsModule,
+        LoggingModule,
+        AiClientModule,
+        BotRuntimeModule,
+        DatabaseModule,
+        CacheModule,
+    ]
+
     global _injector
-    if _injector is None:
-        with _injector_lock:
-            if _injector is None:
-                _injector = Injector(
-                    modules=[
-                        SettingsModule(),
-                        LoggingModule(),
-                        AiClientModule(),
-                        BotRuntimeModule(),
-                        DatabaseModule(),
-                        CacheModule(),
-                    ]
-                )
+    with _injector_lock:
+        _injector = _injector or Injector(modules=module_classes)
     assert _injector is not None, "Should be set by now."
     return _injector
 
