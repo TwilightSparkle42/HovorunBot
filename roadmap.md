@@ -1,12 +1,13 @@
 # AskBro Improvement Roadmap
 
-## 1. Handler Orchestration & Extensibility
+## 1. Application Orchestration & Extensibility
 - [ ] Build a handler pipeline coordinator that resolves dependencies once, supports multiple handler executions per
   update, and removes the per-module tuple management.
 - [ ] Replace ad-hoc `print` diagnostics with structured logging hooked into the existing logger to keep telemetry
   consistent across environments.
 - [ ] Introduce handler auto-discovery (entry points or module scanning) so adding a handler only requires defining the
   class.
+- [ ] Introduce module autodiscovery to avoid direct modules declarations in `di_config.py`
 
 ## 2. Chat-Level AI Configuration
 - [ ] Extend chat persistence to store system prompts, default model, and sampling parameters so each chat can tune
