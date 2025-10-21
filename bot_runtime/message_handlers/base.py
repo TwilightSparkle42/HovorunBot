@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import ClassVar
 
 from telegram import Update
 
@@ -9,6 +10,8 @@ from utils.di import Registry
 
 
 class BaseHandler(Dependable, ABC):
+    continue_after_handle: ClassVar[bool] = False
+
     @abstractmethod
     def can_handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> bool:
         """

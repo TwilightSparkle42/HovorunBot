@@ -1,14 +1,11 @@
 from injector import Binder, Module, singleton
+from telegram.ext import CommandHandler, MessageHandler, filters
 
-from bot_runtime import BotRuntime
-
-from .message_handlers.ai_message import AiMessageHandler
+from .message_handlers import discover_handler_types
 from .message_handlers.base import HandlersRegistry
-from .message_handlers.empty_chat_settings import EmptyChatSettingsHandler
-from .message_handlers.empty_message import EmptyMessageHandler
-from .message_handlers.not_allowed import NotAllowedHandler
-from .message_handlers.summarize_message import SummarizeMessageHandler
-from .message_handlers.test_message import TestMessageHandler
+from .message_pipeline import MessageHandlerPipeline
+from .runtime import BotRuntime
+from .telegram_handlers import TelegramHandlerRegistration, TelegramHandlersSet
 
 
 class BotRuntimeModule(Module):
@@ -22,19 +19,22 @@ class BotRuntimeModule(Module):
         binder.bind(BotRuntime, to=BotRuntime, scope=singleton)
 
         handler_registry = HandlersRegistry()
+        injector = binder.injector
+        if injector is None:
+            raise RuntimeError("Injector is not initialised while configuring BotRuntimeModule.")
 
-        # TODO: replace with autodiscovery or other dynamic binding mechanism
-        # TODO: Move handler orchestration into a dedicated bootstrap that reads handler metadata once.
-        #  Maintaining this tuple alongside DEPENDENCIES spreads ordering knowledge across files and is
-        #  the current pain point when experimenting with new handlers or restructuring the hierarchy.
-        for handler in (
-            EmptyChatSettingsHandler,
-            EmptyMessageHandler,
-            NotAllowedHandler,
-            SummarizeMessageHandler,
-            TestMessageHandler,
-            AiMessageHandler,
-        ):
-            handler_registry.register(handler, binder.injector.create_object(handler))
+        for handler_type in discover_handler_types():
+            handler_registry.register(handler_type, injector.create_object(handler_type))
 
         binder.bind(HandlersRegistry, to=handler_registry, scope=singleton)
+        binder.bind(MessageHandlerPipeline, to=MessageHandlerPipeline(handler_registry), scope=singleton)
+
+        telegram_handlers = TelegramHandlersSet(
+            registrations=[
+                TelegramHandlerRegistration(lambda runtime: CommandHandler("start", runtime.start_command)),
+                TelegramHandlerRegistration(
+                    lambda runtime: MessageHandler(filters.TEXT & ~filters.COMMAND, runtime.handle_message)
+                ),
+            ]
+        )
+        binder.bind(TelegramHandlersSet, to=telegram_handlers, scope=singleton)

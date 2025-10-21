@@ -1,4 +1,4 @@
-from bot_runtime import BotRuntime
+from bot_runtime.runtime import BotRuntime
 from di_config import setup_di
 
 
