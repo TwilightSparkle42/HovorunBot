@@ -10,7 +10,7 @@ Any code must be validated using such tools as ruff and mypy, and all issues mus
 is prohibited until there is an obvious reason for it.
 
 ## Coding Style & Naming Conventions
-Target Python 3.14 features and prefer type annotations everywhere. 
+Target Python 3.14 features and prefer type annotations everywhere. Do not use `from __future__ import annotations`.
 Use four spaces for indentation, single quotes for short strings, and descriptive module-level names 
 (e.g., `summarize_message_handler`). Service classes should end with `Service` or `Repository`; 
 injector modules should expose a `Module` subclass in `module.py`.

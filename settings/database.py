@@ -35,7 +35,7 @@ class DatabaseSettings(SettingsBase):
         db_path = self.database_path.expanduser().resolve()
         return f"sqlite+aiosqlite:///{db_path}"
 
-    @field_validator('database_url')
+    @field_validator("database_url")
     @classmethod
     def _validate_async_sqlite(cls, value: str | None) -> str | None:
         """
@@ -47,6 +47,6 @@ class DatabaseSettings(SettingsBase):
         """
         if value is None:
             return None
-        if not value.startswith('sqlite+aiosqlite://'):
-            raise ValueError('database_url must use the sqlite+aiosqlite driver')
+        if not value.startswith("sqlite+aiosqlite://"):
+            raise ValueError("database_url must use the sqlite+aiosqlite driver")
         return value

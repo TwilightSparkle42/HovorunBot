@@ -1,10 +1,7 @@
-from typing import Any, Generic, Iterator, TypeVar
-
-K = TypeVar("K")
-T = TypeVar("T")
+from typing import Any
 
 
-class Registry(Generic[K, T]):
+class Registry[K, T]:
     """
     Generic registry that maps keys to injectable objects.
 
@@ -34,26 +31,3 @@ class Registry(Generic[K, T]):
 
     def as_dict(self) -> dict[K, T]:
         return self._objects
-
-
-class Collection(Generic[T]):
-    """
-    Ordered collection for objects that share a common parent type.
-
-    Provides iterable access while retaining insertion order.
-    """
-
-    def __init__(self) -> None:
-        self._objects: list[T] = []
-
-    def add(self, to_add: T) -> None:
-        self._objects.append(to_add)
-
-    def __iter__(self) -> Iterator[T]:
-        return iter(self._objects)
-
-    def as_list(self) -> list[T]:
-        return self._objects
-
-    def as_tuple(self) -> tuple[T, ...]:
-        return tuple(self._objects)

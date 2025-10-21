@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from graphlib import TopologicalSorter
-from typing import Iterable, TypeVar, cast
+from typing import Iterable, cast
 
 
 class Dependable:
@@ -11,10 +9,10 @@ class Dependable:
     Subclasses override :attr:`DEPENDENCIES` to express their requirements.
     """
 
-    DEPENDENCIES: tuple[type["Dependable"], ...] = ()
+    DEPENDENCIES: tuple[type[Dependable], ...] = ()
 
     @classmethod
-    def get_dependencies(cls) -> tuple[type["Dependable"], ...]:
+    def get_dependencies(cls) -> tuple[type[Dependable], ...]:
         """
         Return the statically declared dependencies for the subclass.
 
@@ -23,10 +21,7 @@ class Dependable:
         return cls.DEPENDENCIES
 
 
-DependableType = TypeVar("DependableType", bound=type[Dependable])
-
-
-def sort_topologically(to_sort: Iterable[DependableType]) -> list[DependableType]:
+def sort_topologically[TDependable: Dependable](to_sort: Iterable[type[TDependable]]) -> list[type[TDependable]]:
     """
     Order :class:`Dependable` subclasses so dependencies precede dependants.
 
@@ -34,10 +29,12 @@ def sort_topologically(to_sort: Iterable[DependableType]) -> list[DependableType
     :returns: A new list sorted in dependency-safe order.
     """
     items = list(to_sort)
-    graph: dict[DependableType, set[DependableType]] = {}
+    graph: dict[type[TDependable], set[type[TDependable]]] = {}
     for item in items:
         dependencies = {
-            cast(DependableType, dependency) for dependency in item.get_dependencies() if isinstance(dependency, type)
+            cast(type[TDependable], dependency)
+            for dependency in item.get_dependencies()
+            if isinstance(dependency, type)
         }
         graph[item] = dependencies
 
