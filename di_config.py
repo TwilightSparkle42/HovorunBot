@@ -7,6 +7,7 @@ from bot_runtime.module import BotRuntimeModule
 from cache.module import CacheModule
 from database.module import DatabaseModule
 from errors import ConfigError
+from logging_config.module import LoggingModule
 from settings.module import SettingsModule
 
 _injector: Injector | None = None
@@ -26,6 +27,7 @@ def setup_di() -> Injector:
                 _injector = Injector(
                     modules=[
                         SettingsModule(),
+                        LoggingModule(),
                         AiClientModule(),
                         BotRuntimeModule(),
                         DatabaseModule(),

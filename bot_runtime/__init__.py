@@ -1,5 +1,3 @@
-import logging
-
 from injector import Inject
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
@@ -10,11 +8,12 @@ from cache.telegram_update_storage import TelegramUpdateStorage
 from database.chat_access_repository import ChatAccessRepository
 from database.models import ChatAccess
 from errors import ConfigError
+from logging_config.common import WithLogger
 from settings.bot import TelegramSettings
 from utils.dependable import sort_topologically
 
 
-class BotRuntime:
+class BotRuntime(WithLogger):
     def __init__(
         self,
         telegram_settings: Inject[TelegramSettings],
@@ -30,8 +29,6 @@ class BotRuntime:
         self._chat_access_repository = chat_access_repository
         self._update_storage = update_storage
         self.add_handlers()
-        self._logger = logging.getLogger(__name__)
-        self._logger.setLevel(logging.INFO)
 
     def add_handlers(self) -> None:
         # Register command handlers
@@ -43,9 +40,9 @@ class BotRuntime:
         self._application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
     def run(self) -> None:
-        self._logger.info("Starting bot with polling interval of 3 seconds...")
-        print("Starting bot with polling interval of 3 seconds...")
-        self._application.run_polling(poll_interval=3)
+        poll_interval = 3
+        self._logger.info("Starting Telegram polling (interval=%s seconds)", poll_interval)
+        self._application.run_polling(poll_interval=poll_interval)
 
     # Command handler for /start
     async def start_command(self, update: Update, _: Context):
@@ -64,6 +61,8 @@ class BotRuntime:
     async def handle_message(self, update: Update, context: Context):
         await self._update_storage.store(update)
         chat_settings = await self._ensure_chat_access(update)
+        chat_id = update.effective_chat.id if update.effective_chat else None
+        self._logger.info("Processing inbound update %s for chat %s", update.update_id, chat_id)
         handler_types: list[type[BaseHandler]] = sort_topologically(self._handlers.keys())
         # TODO: Replace this manual loop with a pipeline/strategy executor that can compose multiple handlers.
         #  Right now we return after the first hit, which makes orchestration brittle, duplicates dependency logic,
@@ -71,14 +70,21 @@ class BotRuntime:
         for handler_cls in handler_types:
             handler = self._handlers.get(handler_cls)
             if not handler.can_handle(update, context, chat_settings):
-                # TODO: Replace debug prints with structured logging hooked into the bot logger.
-                #  Mixing stdout prints with logging makes it hard to trace production issues.
-                print(f"Handler {handler.__class__.__name__} does not handle the message.")
+                self._logger.debug(
+                    "Handler %s cannot handle update %s",
+                    handler.__class__.__name__,
+                    update.update_id,
+                )
                 continue
-            # TODO: Route diagnostics through logging instead of stdout so we can adjust verbosity per environment.
-            print(f"Handling message with handler: {handler.__class__.__name__}")
+            self._logger.info(
+                "Dispatching handler %s for update %s",
+                handler.__class__.__name__,
+                update.update_id,
+            )
             await handler.handle(update, context, chat_settings)
             return
+
+        self._logger.info("No handler accepted update %s", update.update_id)
 
     async def _ensure_chat_access(self, update: Update) -> ChatAccess | None:
         chat = update.effective_chat
@@ -90,6 +96,8 @@ class BotRuntime:
         if not update.message:
             return
 
+        chat_id = update.effective_chat.id if update.effective_chat else None
+        self._logger.info("Access denied for chat %s", chat_id)
         await update.message.reply_text("Access pending approval. Please contact the administrator.")
 
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Final
 
@@ -9,6 +8,7 @@ from pydantic import BaseModel
 from telegram import Chat, Message, Update, User
 
 from cache.valkey import ValkeyCache
+from logging_config.common import WithLogger
 
 
 class TelegramUpdateRecord(BaseModel):
@@ -31,7 +31,7 @@ class TelegramUpdateRecord(BaseModel):
         return f"telegram:update:{self.update_id}"
 
 
-class TelegramUpdateStorage:
+class TelegramUpdateStorage(WithLogger):
     """
     Persist incoming Telegram updates in Valkey for short-term recall.
 
@@ -44,7 +44,6 @@ class TelegramUpdateStorage:
 
     def __init__(self, cache: Inject[ValkeyCache]) -> None:
         self._client = cache.client
-        self._logger = logging.getLogger(__name__)
 
     async def store(self, update: Update) -> None:
         """

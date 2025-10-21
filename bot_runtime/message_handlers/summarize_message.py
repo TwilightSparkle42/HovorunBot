@@ -1,4 +1,3 @@
-import logging
 import re
 from typing import Final, Sequence, cast
 
@@ -9,13 +8,14 @@ from ai_client.base import AiClientRegistry
 from bot_types import Context
 from cache.telegram_update_storage import TelegramUpdateRecord, TelegramUpdateStorage
 from database.models import ChatAccess
+from logging_config.common import WithLogger
 
 from .base import BaseHandler
 from .helpers import build_message_chain, resolve_ai_client
 from .not_allowed import NotAllowedHandler
 
 
-class SummarizeMessageHandler(BaseHandler):
+class SummarizeMessageHandler(WithLogger, BaseHandler):
     """
     Handle summarisation commands by aggregating chat history from Valkey.
 
@@ -38,7 +38,6 @@ class SummarizeMessageHandler(BaseHandler):
     ) -> None:
         self._ai_registry = ai_registry
         self._update_storage = update_storage
-        self._logger = logging.getLogger(__name__)
 
     def can_handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> bool:
         message = update.message
@@ -71,9 +70,26 @@ class SummarizeMessageHandler(BaseHandler):
 
         assert chat_settings is not None, "Chat access record is required."
         history = await self._retrieve_history(chat_id=int(chat_settings.chat_id), limit=limit)
+        self._logger.info(
+            "Retrieved %s cached messages for chat %s (limit=%s)",
+            len(history),
+            chat_settings.chat_id,
+            limit,
+        )
         message_chain = await self._collect_reply_chain(history, context.bot)
         ai_client = resolve_ai_client(self._ai_registry, chat_settings)
+        self._logger.info(
+            "Requesting summary from %s for chat %s (limit=%s)",
+            ai_client.get_name(),
+            chat_settings.chat_id,
+            limit,
+        )
         response = await ai_client.answer(message_chain)
+        self._logger.info(
+            "Received summary response from %s for chat %s",
+            ai_client.get_name(),
+            chat_settings.chat_id,
+        )
         await telegram_message.reply_text(response)
         return None
 

@@ -6,6 +6,7 @@ from telegram import Bot, Message, Update
 from ai_client.base import AiClientRegistry
 from bot_types import Context
 from database.models import ChatAccess
+from logging_config.common import WithLogger
 from settings.bot import TelegramSettings
 
 from .base import BaseHandler
@@ -13,7 +14,7 @@ from .helpers import build_message_chain, is_same_user, reply_chain_to_records, 
 from .summarize_message import SummarizeMessageHandler
 
 
-class AiMessageHandler(BaseHandler):
+class AiMessageHandler(WithLogger, BaseHandler):
     DEPENDENCIES = (SummarizeMessageHandler,)
 
     def __init__(self, ai_registry: Inject[AiClientRegistry], bot_settings: Inject[TelegramSettings]) -> None:
@@ -37,7 +38,24 @@ class AiMessageHandler(BaseHandler):
         #  We only respect `ChatAccess.provider`, so all other behavioural tweaks are currently hard-coded.
         message_chain = await self._collect_reply_chain(message, context.bot)
         ai_client = resolve_ai_client(self._ai_registry, chat_settings)
+        self._logger.info(
+            "Prepared message chain with %s entries for chat %s",
+            len(message_chain),
+            chat_settings.chat_id,
+        )
+        self._logger.info(
+            "Requesting AI response from %s for chat %s (message_id=%s)",
+            ai_client.get_name(),
+            chat_settings.chat_id,
+            message.message_id,
+        )
         answer = await ai_client.answer(message_chain)
+        self._logger.info(
+            "Received AI response from %s for chat %s (message_id=%s)",
+            ai_client.get_name(),
+            chat_settings.chat_id,
+            message.message_id,
+        )
         await message.reply_text(answer)
 
     async def _collect_reply_chain(self, message: Message, bot: Bot) -> Sequence[tuple[str, str]]:
