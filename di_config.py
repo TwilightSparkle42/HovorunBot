@@ -17,8 +17,7 @@ def setup_di() -> Injector:
     """
     Lazily construct and memoise the application's Injector instance.
 
-    Returns:
-        Injector: The configured Injector singleton.
+    :returns: The configured :class:`injector.Injector` singleton.
     """
     global _injector
     if _injector is None:
@@ -41,8 +40,8 @@ def get_injector() -> Injector:
     """
     Return the previously configured global Injector instance.
 
-    Raises:
-        ConfigError: If the injector was not initialised yet.
+    :raises ConfigError: If the injector has not been initialised via :func:`setup_di`.
+    :returns: The existing :class:`injector.Injector` instance.
     """
     if _injector is None:
         raise ConfigError("Injector is not initialised. Call setup_di() first.")

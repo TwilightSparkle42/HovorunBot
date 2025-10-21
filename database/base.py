@@ -2,6 +2,10 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class BaseModel(DeclarativeBase):
-    """Declarative base class for ORM models."""
+    """
+    Declarative SQLAlchemy base for all ORM models.
+
+    Models extending this base get shared metadata for migrations and schema inspection.
+    """
 
     pass

@@ -3,9 +3,9 @@ import pydantic_settings
 
 class SettingsBase(pydantic_settings.BaseSettings):
     """
-    Basic settings class for all settings of AskBro application.
+    Base settings type for all AskBro configuration objects.
 
-    Used as a label class for some checks as well as for DI injection.
+    Acts as a marker for dependency injection wiring while inheriting common Pydantic behaviour.
     """
 
     class Config:

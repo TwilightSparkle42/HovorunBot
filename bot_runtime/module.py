@@ -12,7 +12,11 @@ from .message_handlers.test_message import TestMessageHandler
 
 
 class BotRuntimeModule(Module):
-    """Provides bindings for bot runtime orchestration."""
+    """
+    Configure dependency injection for bot runtime orchestration.
+
+    The module wires the :class:`bot_runtime.BotRuntime` and registers all message handlers with the shared registry.
+    """
 
     def configure(self, binder: Binder) -> None:
         binder.bind(BotRuntime, to=BotRuntime, scope=singleton)
@@ -20,6 +24,9 @@ class BotRuntimeModule(Module):
         handler_registry = HandlersRegistry()
 
         # TODO: replace with autodiscovery or other dynamic binding mechanism
+        # TODO: Move handler orchestration into a dedicated bootstrap that reads handler metadata once.
+        #  Maintaining this tuple alongside DEPENDENCIES spreads ordering knowledge across files and is
+        #  the current pain point when experimenting with new handlers or restructuring the hierarchy.
         for handler in (
             EmptyChatSettingsHandler,
             EmptyMessageHandler,

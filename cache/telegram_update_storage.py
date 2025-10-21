@@ -32,7 +32,11 @@ class TelegramUpdateRecord(BaseModel):
 
 
 class TelegramUpdateStorage:
-    """Persist incoming telegram updates into Valkey with a 24-hour TTL."""
+    """
+    Persist incoming Telegram updates in Valkey for short-term recall.
+
+    Records are retained for 24 hours and automatically indexed per chat to facilitate history lookups.
+    """
 
     _TTL: Final[int] = int(timedelta(hours=24).total_seconds())
 
@@ -43,7 +47,11 @@ class TelegramUpdateStorage:
         self._logger = logging.getLogger(__name__)
 
     async def store(self, update: Update) -> None:
-        """Persist the incoming update as JSON in Valkey."""
+        """
+        Cache a Telegram :class:`telegram.Update` instance.
+
+        :param update: Update received from the Telegram webhook/polling loop.
+        """
         record = self._build_record(update)
         if record is None:
             return
@@ -66,8 +74,12 @@ class TelegramUpdateStorage:
         exclude_update_id: int | None = None,
     ) -> list[TelegramUpdateRecord]:
         """
-        Fetch up to ``limit`` most recent telegram updates for the given chat,
-        excluding the provided update ID if supplied.
+        Retrieve the most recent cached updates for a chat.
+
+        :param chat_id: Identifier of the chat whose history should be fetched.
+        :param limit: Maximum number of records to include in the response.
+        :param exclude_update_id: Optional update identifier that should be omitted from the result set.
+        :returns: A list of cached updates ordered from newest to oldest.
         """
         if limit <= 0:
             return []
@@ -155,7 +167,9 @@ class TelegramUpdateStorage:
 
     async def _index_update(self, record: TelegramUpdateRecord) -> None:
         """
-        Index a stored update in a per-chat sorted set for efficient history lookups.
+        Index a stored update in a per-chat sorted set.
+
+        :param record: Cached update that should be associated with its chat history.
         """
         chat_id = record.chat_id
         if chat_id is None:

@@ -16,7 +16,12 @@ class BaseAiClient[TSettings: BaseSettings](ABC):
 
     @abstractmethod
     async def answer(self, message_chain: Sequence[tuple[str, str]]) -> str:
-        """Answer a user message with a response from the AI model."""
+        """
+        Generate a response to the supplied conversation history.
+
+        :param message_chain: Ordered pairs of role and content representing the conversation so far.
+        :returns: The assistant's reply text.
+        """
         raise NotImplementedError
 
 

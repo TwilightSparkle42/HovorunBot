@@ -11,11 +11,24 @@ from utils.di import Registry
 class BaseHandler(Dependable, ABC):
     @abstractmethod
     def can_handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> bool:
-        """Return True when this handler should process the update."""
+        """
+        Determine whether the handler should process the update.
+
+        :param update: Telegram update under evaluation.
+        :param context: Bot execution context passed in by the dispatcher.
+        :param chat_settings: Persisted chat configuration, if available.
+        :returns: ``True`` when the handler wants to consume the update; otherwise ``False``.
+        """
 
     @abstractmethod
     async def handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> None:
-        """Handle the update."""
+        """
+        Process the update and perform the handler's business logic.
+
+        :param update: Telegram update to handle.
+        :param context: Bot execution context passed in by the dispatcher.
+        :param chat_settings: Persisted chat configuration, if available.
+        """
 
 
 class HandlersRegistry(Registry[type[BaseHandler], BaseHandler]):

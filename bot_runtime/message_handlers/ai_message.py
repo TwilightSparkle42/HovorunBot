@@ -33,6 +33,8 @@ class AiMessageHandler(BaseHandler):
     async def handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> None:
         assert chat_settings is not None, "Chat access record is required."
         message = cast(Message, update.message)
+        # TODO: Inject per-chat persona/model settings (system prompts, temperature overrides, etc.).
+        #  We only respect `ChatAccess.provider`, so all other behavioural tweaks are currently hard-coded.
         message_chain = await self._collect_reply_chain(message, context.bot)
         ai_client = resolve_ai_client(self._ai_registry, chat_settings)
         answer = await ai_client.answer(message_chain)
@@ -40,4 +42,5 @@ class AiMessageHandler(BaseHandler):
 
     async def _collect_reply_chain(self, message: Message, bot: Bot) -> Sequence[tuple[str, str]]:
         records = reply_chain_to_records(message)
+        # TODO: Allow chat-configured system prefixes so responses can be tailored per conversation.
         return build_message_chain(records, bot)

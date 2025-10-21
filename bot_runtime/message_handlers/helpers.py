@@ -15,8 +15,12 @@ UserLike = User | Bot | int
 
 def resolve_ai_client(registry: AiClientRegistry, record: ChatAccess) -> BaseAiClient:
     """
-    Return an AI client for the chat record or raise a concise configuration error.
-    Keeping this in a helper avoids repeating provider resolution logic in handlers.
+    Resolve an AI client for the supplied chat record.
+
+    :param registry: Registry holding available AI client instances.
+    :param record: Chat configuration specifying the desired provider.
+    :raises ConfigError: If the configured provider is not registered.
+    :returns: The AI client bound to the chat's provider.
     """
     provider = record.provider or ChatAccess.DEFAULT_PROVIDER
     if not registry.contains(provider):
@@ -25,14 +29,25 @@ def resolve_ai_client(registry: AiClientRegistry, record: ChatAccess) -> BaseAiC
 
 
 def user_id(user: UserLike) -> int:
-    """Return a stable identifier for a Telegram user, bot, or raw id."""
+    """
+    Return a stable identifier for a Telegram user, bot, or raw identifier.
+
+    :param user: Telegram ``User``/``Bot`` instance or numeric identifier.
+    :returns: Integer identifier for the user.
+    """
     if isinstance(user, (User, Bot)):
         return user.id
     return int(user)
 
 
 def is_same_user(left: UserLike, right: UserLike) -> bool:
-    """Loose equality helper that accounts for raw identifiers and telegram objects."""
+    """
+    Compare two user references while accounting for Telegram objects versus raw identifiers.
+
+    :param left: First user reference.
+    :param right: Second user reference.
+    :returns: ``True`` when both references resolve to the same identifier.
+    """
     return user_id(left) == user_id(right)
 
 
@@ -43,7 +58,12 @@ def build_message_chain(
     prefix: Sequence[tuple[str, str]] | None = None,
 ) -> list[tuple[str, str]]:
     """
-    Convert chat messages into a sequence formatted for AI providers.
+    Convert chat messages into a role/content sequence suitable for AI providers.
+
+    :param records: Cached Telegram updates ordered from newest to oldest.
+    :param bot: Telegram bot instance used to detect assistant messages.
+    :param prefix: Optional conversation prefix to prepend to the chain.
+    :returns: A list of ``(role, content)`` tuples.
     """
 
     def is_bot(user: UserLike) -> bool:
@@ -57,7 +77,10 @@ def build_message_chain(
 
 def reply_chain_to_records(message: Message) -> list[TelegramUpdateRecord]:
     """
-    Convert a Telegram message and its reply chain into ordered TelegramUpdateRecord objects (newest first).
+    Convert a message and its reply chain into cached record instances.
+
+    :param message: Telegram message whose ancestry should be traversed.
+    :returns: Records ordered from newest to oldest covering the reply loop.
     """
     result: list[TelegramUpdateRecord] = []
     current: Message | None = message
@@ -75,7 +98,11 @@ def append_record_message(
     result: list[tuple[str, str]], *, record: TelegramUpdateRecord, is_bot: Callable[[UserLike], bool]
 ) -> None:
     """
-    Append a cached telegram record to ``result`` if it contains text, tagging bot-originated messages as ``assistant``.
+    Append a cached record to the message chain when it contains text.
+
+    :param result: Mutable list of ``(role, content)`` tuples to extend.
+    :param record: Cached Telegram update under consideration.
+    :param is_bot: Callable that checks whether an author corresponds to the bot.
     """
     text = record.message_text
     if not text:
@@ -114,7 +141,11 @@ def _resolve_username(
 
 def _message_to_record(message: Message, *, fallback_update_id: int) -> TelegramUpdateRecord:
     """
-    Build an in-memory TelegramUpdateRecord from a live Telegram message object.
+    Build an in-memory :class:`TelegramUpdateRecord` from a live Telegram message.
+
+    :param message: Telegram message to convert.
+    :param fallback_update_id: Identifier to use when the original update id is unknown.
+    :returns: A synthetic cached record representing the message.
     """
     user = message.from_user
     chat = message.chat
@@ -146,7 +177,12 @@ def _normalize_datetime(value: datetime | None) -> datetime | None:
 
 
 def _extract_message_text(message: Message) -> str | None:
-    """Return textual content from a Telegram message, falling back to the media caption."""
+    """
+    Extract textual content from a Telegram message, falling back to the caption.
+
+    :param message: Telegram message to inspect.
+    :returns: Message text or caption if available; otherwise ``None``.
+    """
     if message.text:
         return message.text
     if message.caption:

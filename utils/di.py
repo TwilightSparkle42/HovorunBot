@@ -6,9 +6,9 @@ T = TypeVar("T")
 
 class Registry(Generic[K, T]):
     """
-    Base registry class.
+    Generic registry that maps keys to injectable objects.
 
-    Used to keep references to different types of objects.
+    The registry enforces that registered objects conform to a target type.
     """
 
     def __init__(self, target_type: type[Any]) -> None:
@@ -38,7 +38,9 @@ class Registry(Generic[K, T]):
 
 class Collection(Generic[T]):
     """
-    Base collection class to hold multiple instances of the same parent class.
+    Ordered collection for objects that share a common parent type.
+
+    Provides iterable access while retaining insertion order.
     """
 
     def __init__(self) -> None:

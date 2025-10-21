@@ -5,7 +5,11 @@ from cache.valkey import ValkeyCache
 
 
 class CacheModule(Module):
-    """Registers cache-related infrastructure with the injector."""
+    """
+    Configure cache-related bindings for dependency injection.
+
+    The module registers the Valkey cache client and Telegram update storage as singletons.
+    """
 
     def configure(self, binder: Binder) -> None:
         binder.bind(ValkeyCache, to=ValkeyCache, scope=singleton)

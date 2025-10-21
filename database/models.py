@@ -32,3 +32,5 @@ class ChatAccess(BaseModel):
         default=DEFAULT_PROVIDER,
         server_default=DEFAULT_PROVIDER,
     )
+    # TODO: Add per-chat AI configuration (model name, system prompt, sampling params).
+    #  Handlers currently hard-code prompts and rely solely on `provider`, so chats cannot tailor AI behaviour.

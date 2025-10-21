@@ -1,7 +1,7 @@
 from typing import Sequence
 
+import httpx
 import pydantic
-import requests
 from injector import Inject
 
 from ai_client.base import BaseAiClient
@@ -44,21 +44,24 @@ You’re just another person in the chat — don’t act like a bot.
                 messages.append({"role": "assistant", "content": message})
             else:
                 messages.append({"role": "user", "name": user, "content": message})
-        response = requests.post(
-            "https://api.totalgpt.ai/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self._settings.infermatic_api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "Doctor-Shotgun-L3.3-70B-Magnum-v4-SE",
-                "messages": messages,
-                # TODO: Temporary hard-coded parameters for testing. Implement ways to configure them.
-                "max_tokens": 10000,
-                "temperature": 0.7,
-                "top_k": 40,
-                "repetition_penalty": 1.2,
-            },
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                'https://api.totalgpt.ai/v1/chat/completions',
+                headers={
+                    'Authorization': f'Bearer {self._settings.infermatic_api_key}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'model': 'Doctor-Shotgun-L3.3-70B-Magnum-v4-SE',
+                    'messages': messages,
+                    # TODO: Temporary hard-coded parameters for testing. Implement ways to configure them.
+                    'max_tokens': 10000,
+                    'temperature': 0.7,
+                    'top_k': 40,
+                    'repetition_penalty': 1.2,
+                },
+                timeout=httpx.Timeout(30.0),
+            )
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        payload = response.json()
+        return payload['choices'][0]['message']['content']

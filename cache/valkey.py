@@ -8,7 +8,9 @@ from settings.cache import CacheSettings
 
 class ValkeyCache:
     """
-    Lazily instantiates an async Valkey client using the configured cache settings.
+    Lazily instantiate an async Valkey client based on :class:`settings.cache.CacheSettings`.
+
+    The client is configured eagerly during construction and reused through the lifetime of the application.
     """
 
     def __init__(self, settings: Inject[CacheSettings]) -> None:
@@ -21,7 +23,9 @@ class ValkeyCache:
 
     def _create_client(self) -> Valkey:
         """
-        Build the Valkey client using the configured host, port, and database.
+        Build the Valkey client according to the configured connection details.
+
+        :returns: A ready-to-use :class:`valkey.asyncio.Valkey` instance.
         """
         return Valkey(
             host=self._settings.host,

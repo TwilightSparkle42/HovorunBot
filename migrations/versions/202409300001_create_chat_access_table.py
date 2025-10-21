@@ -1,4 +1,4 @@
-"""create chat access table
+"""Create chat access table.
 
 Revision ID: 202409300001
 Revises:

@@ -17,8 +17,10 @@ from .not_allowed import NotAllowedHandler
 
 class SummarizeMessageHandler(BaseHandler):
     """
-    Handles summarization commands by collecting recent chat history from Valkey and
-    requesting a concise summary from the configured AI provider.
+    Handle summarisation commands by aggregating chat history from Valkey.
+
+    Recent messages are compiled into an AI-ready prompt and sent to the configured provider to generate a concise
+    recap.
     """
 
     DEPENDENCIES = (NotAllowedHandler,)
@@ -86,6 +88,8 @@ class SummarizeMessageHandler(BaseHandler):
                 "Do not include any personal opinion until you directly asked.",
             )
         ]
+        # TODO: Pull the summary/system prompt from chat-level configuration instead of hard-coding English text.
+        #  Different groups will want localized or domain-specific summaries.
         return build_message_chain(messages, bot, prefix=prefix)
 
     async def _retrieve_history(self, chat_id: int, limit: int) -> list[TelegramUpdateRecord]:

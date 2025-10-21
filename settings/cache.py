@@ -7,7 +7,9 @@ from .base import SettingsBase
 
 class CacheSettings(SettingsBase):
     """
-    Configuration for the Valkey cache connection.
+    Configure how the application connects to Valkey.
+
+    Environment variables prefixed with ``CACHE_`` override the default host, port, and database index.
     """
 
     model_config = SettingsConfigDict(

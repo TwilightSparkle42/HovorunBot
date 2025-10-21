@@ -52,7 +52,7 @@ class BotRuntime:
         await self._update_storage.store(update)
         if update.message is None:
             return
-        record = self._ensure_chat_access(update)
+        record = await self._ensure_chat_access(update)
         if record is None:
             return
         if not record.allowed:
@@ -63,22 +63,28 @@ class BotRuntime:
     # Message handler for plain text messages
     async def handle_message(self, update: Update, context: Context):
         await self._update_storage.store(update)
-        chat_settings = self._ensure_chat_access(update)
+        chat_settings = await self._ensure_chat_access(update)
         handler_types: list[type[BaseHandler]] = sort_topologically(self._handlers.keys())
+        # TODO: Replace this manual loop with a pipeline/strategy executor that can compose multiple handlers.
+        #  Right now we return after the first hit, which makes orchestration brittle, duplicates dependency logic,
+        #  and prevents cross-cutting concerns (e.g. auditing, analytics) from running alongside the main responder.
         for handler_cls in handler_types:
             handler = self._handlers.get(handler_cls)
             if not handler.can_handle(update, context, chat_settings):
+                # TODO: Replace debug prints with structured logging hooked into the bot logger.
+                #  Mixing stdout prints with logging makes it hard to trace production issues.
                 print(f"Handler {handler.__class__.__name__} does not handle the message.")
                 continue
+            # TODO: Route diagnostics through logging instead of stdout so we can adjust verbosity per environment.
             print(f"Handling message with handler: {handler.__class__.__name__}")
             await handler.handle(update, context, chat_settings)
             return
 
-    def _ensure_chat_access(self, update: Update) -> ChatAccess | None:
+    async def _ensure_chat_access(self, update: Update) -> ChatAccess | None:
         chat = update.effective_chat
         if chat is None:
             return None
-        return self._chat_access_repository.ensure_exists(str(chat.id))
+        return await self._chat_access_repository.ensure_exists(str(chat.id))
 
     async def _notify_not_allowed(self, update: Update):
         if not update.message:

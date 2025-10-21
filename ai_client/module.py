@@ -6,7 +6,11 @@ from .infermatic import InfermaticAiClient
 
 
 class AiClientModule(Module):
-    """Provides AI client bindings."""
+    """
+    Configure dependency injection bindings for AI providers.
+
+    Instantiates concrete AI clients and registers them within the shared registry.
+    """
 
     def configure(self, binder: Binder) -> None:
         binder.bind(InfermaticAiClient, to=InfermaticAiClient, scope=singleton)
