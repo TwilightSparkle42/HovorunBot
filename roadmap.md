@@ -21,7 +21,6 @@
 - [x] Swap blocking HTTP clients (e.g., `requests` in `InfermaticAiClient`) for async equivalents to avoid stalling the
   bot during provider calls. (resolved: `InfermaticAiClient` now uses `httpx.AsyncClient`)
 - [ ] Add timeouts/retry policies around external I/O so the runtime can degrade gracefully.
-- [ ] Document that SQLite via `sqlite+aiosqlite` remains mandatory until an approved migration strategy is ready.
 
 ## 4. Observability & Testing
 - [ ] Standardize logging levels/format and surface handler metrics (latency, invocation counts) for easier production
