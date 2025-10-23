@@ -2,3 +2,4 @@
 /.env
 /askbro.db
 /cache/valkey/
+/local_admin.txt

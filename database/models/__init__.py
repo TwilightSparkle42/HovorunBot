@@ -1,3 +1,12 @@
+__all__ = [
+    "User",
+    "Provider",
+    "Model",
+    "Chat",
+    "ChatConfiguration",
+    "ModelConfiguration",
+]
+
 from typing import Any
 from uuid import UUID
 
@@ -5,7 +14,9 @@ from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String, Text, 
 from sqlalchemy import Uuid as SqlUuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database.base import ActiveMixin, BaseModel, DefaultMixin
+from database.models.base import ActiveMixin, BaseModel, DefaultMixin
+
+from .user import User
 
 
 class Provider(DefaultMixin, ActiveMixin, BaseModel):

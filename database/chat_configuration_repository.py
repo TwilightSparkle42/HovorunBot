@@ -98,9 +98,9 @@ class ChatConfigurationRepository:
             .join(Chat)
             .options(
                 selectinload(ChatConfiguration.chat),
-                selectinload(ChatConfiguration.model_configuration).selectinload(
-                    ModelConfiguration.model
-                ).selectinload(Model.provider),
+                selectinload(ChatConfiguration.model_configuration)
+                .selectinload(ModelConfiguration.model)
+                .selectinload(Model.provider),
             )
             .where(Chat.telegram_chat_id == chat_id)
         )

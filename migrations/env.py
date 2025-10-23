@@ -13,7 +13,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from database.base import BaseModel  # noqa: E402
+from database.models.base import BaseModel  # noqa: E402
 from di_config import setup_di  # noqa: E402
 from settings.database import DatabaseSettings  # noqa: E402
 

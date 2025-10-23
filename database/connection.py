@@ -5,7 +5,7 @@ from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import ORMExecuteState, Session, with_loader_criteria
 
-from database.base import DeletableMixin
+from database.models.base import DeletableMixin
 from settings.database import DatabaseSettings
 
 

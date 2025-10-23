@@ -111,9 +111,7 @@ class SummarizeMessageHandler(WithLogger, BaseHandler):
         )
         await telegram_message.reply_text(response)
 
-    async def _collect_reply_chain(
-        self, messages: Sequence[TelegramUpdateRecord], bot: Bot
-    ) -> Sequence[AiMessage]:
+    async def _collect_reply_chain(self, messages: Sequence[TelegramUpdateRecord], bot: Bot) -> Sequence[AiMessage]:
         prefix = [
             AiMessage(
                 role=AiRole.SYSTEM,

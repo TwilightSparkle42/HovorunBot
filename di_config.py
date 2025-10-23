@@ -8,6 +8,7 @@ from cache.module import CacheModule
 from database.module import DatabaseModule
 from errors import ConfigError
 from logging_config.module import LoggingModule
+from management.module import ManagementModule
 from settings.module import SettingsModule
 
 _injector: Injector | None = None
@@ -27,6 +28,7 @@ def setup_di() -> Injector:
         BotRuntimeModule,
         DatabaseModule,
         CacheModule,
+        ManagementModule,
     ]
 
     global _injector
