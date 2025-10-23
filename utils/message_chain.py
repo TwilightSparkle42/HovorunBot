@@ -1,19 +1,25 @@
-from __future__ import annotations
-
 from datetime import datetime, timezone
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence
 
 from telegram import Bot, Message, User
 
-from ai_client.base import AiClientRegistry, BaseAiClient
+from ai_client.base import AiClientRegistry, AiMessage, AiRole, BaseAiClient
 from cache.telegram_update_storage import TelegramUpdateRecord
-from database.models import ChatAccess
+from database.models import ChatConfiguration
 from errors import ConfigError
 
 UserLike = User | Bot | int
 
+__all__ = [
+    "resolve_ai_client",
+    "user_id",
+    "is_same_user",
+    "build_message_chain",
+    "reply_chain_to_records",
+]
 
-def resolve_ai_client(registry: AiClientRegistry, record: ChatAccess) -> BaseAiClient:
+
+def resolve_ai_client(registry: AiClientRegistry, record: ChatConfiguration) -> BaseAiClient[Any]:
     """
     Resolve an AI client for the supplied chat record.
 
@@ -22,10 +28,19 @@ def resolve_ai_client(registry: AiClientRegistry, record: ChatAccess) -> BaseAiC
     :raises ConfigError: If the configured provider is not registered.
     :returns: The AI client bound to the chat's provider.
     """
-    provider = record.provider or ChatAccess.DEFAULT_PROVIDER
-    if not registry.contains(provider):
-        raise ConfigError(f"AI provider '{provider}' is not registered.")
-    return registry.get(provider)
+    model_configuration = record.model_configuration
+    if model_configuration is None:
+        raise ConfigError("Chat has no model configuration attached.")
+
+    model = model_configuration.model
+    provider = model.provider
+    if provider is None:
+        raise ConfigError("Configured model has no provider assigned.")
+
+    provider_name = provider.name
+    if not registry.contains(provider_name):
+        raise ConfigError(f"AI provider '{provider_name}' is not registered.")
+    return registry.get(provider_name)
 
 
 def user_id(user: UserLike) -> int:
@@ -55,23 +70,25 @@ def build_message_chain(
     records: Sequence[TelegramUpdateRecord],
     bot: Bot,
     *,
-    prefix: Sequence[tuple[str, str]] | None = None,
-) -> list[tuple[str, str]]:
+    prefix: Sequence[AiMessage] | None = None,
+) -> list[AiMessage]:
     """
-    Convert chat messages into a role/content sequence suitable for AI providers.
+    Convert chat messages into a sequence of :class:`AiMessage` entries suitable for AI providers.
 
     :param records: Cached Telegram updates ordered from newest to oldest.
     :param bot: Telegram bot instance used to detect assistant messages.
     :param prefix: Optional conversation prefix to prepend to the chain.
-    :returns: A list of ``(role, content)`` tuples.
+    :returns: A list of :class:`AiMessage`.
     """
 
     def is_bot(user: UserLike) -> bool:
         return is_same_user(bot, user)
 
-    result: list[tuple[str, str]] = list(prefix) if prefix else []
+    result: list[AiMessage] = list(prefix) if prefix else []
     for record in records:
-        append_record_message(result, record=record, is_bot=is_bot)
+        message = _record_to_message(record=record, is_bot=is_bot)
+        if message is not None:
+            result.append(message)
     return result
 
 
@@ -94,27 +111,21 @@ def reply_chain_to_records(message: Message) -> list[TelegramUpdateRecord]:
     return result
 
 
-def append_record_message(
-    result: list[tuple[str, str]], *, record: TelegramUpdateRecord, is_bot: Callable[[UserLike], bool]
-) -> None:
-    """
-    Append a cached record to the message chain when it contains text.
-
-    :param result: Mutable list of ``(role, content)`` tuples to extend.
-    :param record: Cached Telegram update under consideration.
-    :param is_bot: Callable that checks whether an author corresponds to the bot.
-    """
+def _record_to_message(
+    *,
+    record: TelegramUpdateRecord,
+    is_bot: Callable[[UserLike], bool],
+) -> AiMessage | None:
     text = record.message_text
     if not text:
-        return
+        return None
 
     author_id = record.user_id
     if author_id is not None and is_bot(author_id):
-        role = "assistant"
-    else:
-        role = _resolve_username(author_id, record.username, record.author, record)
+        return AiMessage(role=AiRole.ASSISTANT, content=text)
 
-    result.append((role, text))
+    username = _resolve_username(author_id, record.username, record.author, record)
+    return AiMessage(role=AiRole.USER, content=text, name=username)
 
 
 def _resolve_username(
@@ -130,7 +141,7 @@ def _resolve_username(
     if isinstance(author, (User, Bot)):
         for attr in ("full_name", "name", "first_name", "username"):
             candidate = getattr(author, attr, None)
-            if candidate:
+            if isinstance(candidate, str) and candidate:
                 return candidate
     if author is not None:
         return str(author)
@@ -188,12 +199,3 @@ def _extract_message_text(message: Message) -> str | None:
     if message.caption:
         return message.caption
     return None
-
-
-__all__ = [
-    "resolve_ai_client",
-    "user_id",
-    "is_same_user",
-    "build_message_chain",
-    "reply_chain_to_records",
-]

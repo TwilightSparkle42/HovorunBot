@@ -8,8 +8,8 @@ from bot_runtime.message_pipeline import MessageHandlerPipeline
 from bot_runtime.telegram_handlers import TelegramHandlersSet
 from bot_types import Context
 from cache.telegram_update_storage import TelegramUpdateStorage
-from database.chat_access_repository import ChatAccessRepository
-from database.models import ChatAccess
+from database.chat_configuration_repository import ChatConfigurationRepository
+from database.models import ChatConfiguration
 from errors import ConfigError
 from logging_config.common import WithLogger
 from settings.bot import TelegramSettings
@@ -21,7 +21,7 @@ class BotRuntime(WithLogger):
         telegram_settings: Inject[TelegramSettings],
         telegram_handlers: Inject[TelegramHandlersSet],
         message_pipeline: Inject[MessageHandlerPipeline],
-        chat_access_repository: Inject[ChatAccessRepository],
+        chat_configuration_repository: Inject[ChatConfigurationRepository],
         update_storage: Inject[TelegramUpdateStorage],
     ) -> None:
         self._settings = telegram_settings
@@ -30,7 +30,7 @@ class BotRuntime(WithLogger):
         self._application = Application.builder().token(self._settings.telegram_token).build()
         self._telegram_handlers = telegram_handlers
         self._message_pipeline = message_pipeline
-        self._chat_access_repository = chat_access_repository
+        self._chat_configuration_repository = chat_configuration_repository
         self._update_storage = update_storage
         self.add_handlers()
 
@@ -42,11 +42,11 @@ class BotRuntime(WithLogger):
         self._logger.info("Starting Telegram polling (interval=%s seconds)", poll_interval)
         self._application.run_polling(poll_interval=poll_interval)
 
-    async def start_command(self, update: Update, _: Context):
+    async def start_command(self, update: Update, _: Context) -> None:
         await self._update_storage.store(update)
         if update.message is None:
             return
-        record = await self._ensure_chat_access(update)
+        record = await self._ensure_chat_configuration(update)
         if record is None:
             return
         if not record.allowed:
@@ -56,7 +56,7 @@ class BotRuntime(WithLogger):
 
     async def handle_message(self, update: Update, context: Context) -> None:
         await self._update_storage.store(update)
-        chat_settings = await self._ensure_chat_access(update)
+        chat_settings = await self._ensure_chat_configuration(update)
         chat_id = update.effective_chat.id if update.effective_chat else None
         self._logger.info("Processing inbound update %s for chat %s", update.update_id, chat_id)
         handled = await self._message_pipeline.dispatch(
@@ -68,13 +68,17 @@ class BotRuntime(WithLogger):
         if not handled:
             self._logger.info("No handler accepted update %s for chat %s", update.update_id, chat_id)
 
-    async def _ensure_chat_access(self, update: Update) -> ChatAccess | None:
+    async def _ensure_chat_configuration(self, update: Update) -> ChatConfiguration | None:
         chat = update.effective_chat
         if chat is None:
             return None
-        return await self._chat_access_repository.ensure_exists(str(chat.id))
+        return await self._chat_configuration_repository.ensure_exists(
+            str(chat.id),
+            title=chat.title,
+            chat_type=chat.type,
+        )
 
-    async def _notify_not_allowed(self, update: Update):
+    async def _notify_not_allowed(self, update: Update) -> None:
         if not update.message:
             return
 

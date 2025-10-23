@@ -4,7 +4,7 @@ from typing import ClassVar
 from telegram import Update
 
 from bot_types import Context
-from database.models import ChatAccess
+from database.models import ChatConfiguration
 from utils.dependable import Dependable
 from utils.di import Registry
 
@@ -13,7 +13,7 @@ class BaseHandler(Dependable, ABC):
     continue_after_handle: ClassVar[bool] = False
 
     @abstractmethod
-    def can_handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> bool:
+    def can_handle(self, update: Update, context: Context, chat_settings: ChatConfiguration | None) -> bool:
         """
         Determine whether the handler should process the update.
 
@@ -24,7 +24,7 @@ class BaseHandler(Dependable, ABC):
         """
 
     @abstractmethod
-    async def handle(self, update: Update, context: Context, chat_settings: ChatAccess | None) -> None:
+    async def handle(self, update: Update, context: Context, chat_settings: ChatConfiguration | None) -> None:
         """
         Process the update and perform the handler's business logic.
 

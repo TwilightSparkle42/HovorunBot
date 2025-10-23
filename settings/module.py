@@ -1,9 +1,9 @@
 from injector import Binder, Module, singleton
 
+from settings.ai_client.grok_settings import GrokSettings
 from settings.bot import TelegramSettings
 from settings.cache import CacheSettings
 from settings.database import DatabaseSettings
-from settings.grok import GrokSettings
 from settings.infermatic import InfermaticSettings
 
 

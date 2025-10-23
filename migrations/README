@@ -1,3 +1,5 @@
 # Alembic Migrations
 
 This directory was initialized manually to manage database schema changes for AskBro.
+
+Revision files follow the `YYYY_MM_DD_<migration-name>.py` pattern configured via Alembic's `file_template`.

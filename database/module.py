@@ -1,7 +1,7 @@
 from injector import Binder, Module, provider, singleton
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from database.chat_access_repository import ChatAccessRepository
+from database.chat_configuration_repository import ChatConfigurationRepository
 from database.connection import DatabaseConnection
 
 
@@ -14,7 +14,7 @@ class DatabaseModule(Module):
 
     def configure(self, binder: Binder) -> None:
         binder.bind(DatabaseConnection, to=DatabaseConnection, scope=singleton)
-        binder.bind(ChatAccessRepository, to=ChatAccessRepository, scope=singleton)
+        binder.bind(ChatConfigurationRepository, to=ChatConfigurationRepository, scope=singleton)
 
     @provider
     @singleton

@@ -1,8 +1,26 @@
 [project]
-name = "askbro"
-version = "0.1.0"
-description = "Add your description here"
+name = "HovorunBot"
+version = "0.0.0a0.dev1"
+description = "Simple telegram bot to integrate AI activities to your group chats"
+readme = "README.md"
 requires-python = ">=3.14"
+authors = [
+    { name = "Oleh Chyhyryn", email = "oleh.chyhyryn@outlook.com" },
+]
+maintainers = [
+    { name = "Oleh Chyhyryn", email = "oleh.chyhyryn@outlook.com" },
+]
+license = { text = "BSD-3-Clause" }
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: BSD License",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Communications :: Chat",
+    "Topic :: Internet",
+]
 dependencies = [
     "alembic>=1.17.0",
     "environs>=14.3.0",
@@ -19,18 +37,37 @@ dependencies = [
     "greenlet>=3.2.4",
 ]
 
+[project.urls]
+Homepage = "https://github.com/TwilightSparkle42/HovorunBot"
+Repository = "https://github.com/TwilightSparkle42/HovorunBot"
+
 [tool.ruff]
 target-version = "py314"
 line-length = 120
 
 [tool.ruff.lint]
 select = [
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
-    "F", # pyflakes
-    "I", # isort
-    "C", # flake8-comprehensions
-    "B", # flake8-bugbear
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "ARG", # flake8-unused-arguments
+    "BLE", # flake8-blind-except
+    "DTZ", # flake8-datetimez
+    "RET", # flake8-return
+    "S",   # bandit
+    "SIM", # flake8-simplify
+    "ASYNC", # flake8-async
+]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unused_ignores = true
+enable_error_code = [
+    "ignore-without-code",
 ]
 
 [dependency-groups]

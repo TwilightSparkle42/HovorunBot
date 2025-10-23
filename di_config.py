@@ -32,7 +32,8 @@ def setup_di() -> Injector:
     global _injector
     with _injector_lock:
         _injector = _injector or Injector(modules=module_classes)
-    assert _injector is not None, "Should be set by now."
+    if _injector is None:
+        raise RuntimeError("Injector initialisation failed during setup.")
     return _injector
 
 

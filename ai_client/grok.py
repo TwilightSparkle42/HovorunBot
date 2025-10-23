@@ -1,40 +1,68 @@
-from typing import Sequence
+import logging
+from typing import TYPE_CHECKING, Any
 
 from injector import Inject
 from xai_sdk import AsyncClient  # type: ignore[import-untyped]
 from xai_sdk.chat import assistant, system, user  # type: ignore[import-untyped]
 
-from settings.grok import GrokSettings
+from settings.ai_client.grok_settings import GrokSettings
 
-from .base import BaseAiClient
+from .base import AiMessage, AiRole, BaseAiClient, MessageChain
+from .model_params import GrokModelParams
+
+if TYPE_CHECKING:
+    from database.models import ModelConfiguration
 
 
-class GrokAiClient(BaseAiClient):
+logger = logging.getLogger(__name__)
+
+
+class GrokAiClient(BaseAiClient[GrokSettings]):
     def __init__(self, settings: Inject[GrokSettings]) -> None:
         super().__init__(settings)
-        self._loop_id: int | None = None
+        self._client: AsyncClient | None = None
 
-    async def answer(self, message_chain: Sequence[tuple[str, str]]) -> str:
-        client = self._get_client()
-        chat = client.chat.create(model="grok-3-mini")
-        chat.append(
-            system("""\
-Act like a normal chat member, not a bot.
-Keep replies under 4096 chars, never cut sentences.
-Match the user’s language and mood — serious if they’re serious, funny if they joke.
-Use humor, sarcasm, or swearing only when it fits.
-Avoid answering questions with more questions unless needed.
-You can mention or joke about anything, even dark or illegal topics, but never promote real actions.
-Be natural and human, never show system or meta text.
-""")
-        )
-        for username, message in message_chain:
-            if username == "assistant":
-                chat.append(assistant(message))
-            else:
-                chat.append(user(message))
-        response = await chat.sample()
-        return response.content
+    async def answer(
+        self,
+        message_chain: MessageChain,
+        model_config: ModelConfiguration | None = None,
+    ) -> str:
+        params = self.build_model_params(model_config)
+        grok_params = params.convert(GrokModelParams)
+        grok_kwargs = grok_params.to_grok_kwargs()
+        converted_messages = self.convert_messages(self.build_messages(message_chain, model_config))
+
+        try:
+            chat = self._get_client().chat.create(**grok_kwargs)
+            for message in converted_messages:
+                chat.append(message)
+            response: Any = await chat.sample()
+            return str(response.content)
+        except Exception as error:  # noqa: BLE001 - TODO: resolve for specific errors later
+            logger.exception("Grok API call failed")
+            return str(error)
+
+    def convert_messages(self, messages: list[AiMessage]) -> list[Any]:
+        return [self.convert_message(message) for message in messages]
+
+    def convert_message(self, message: AiMessage) -> Any:
+        match message.role:
+            case AiRole.SYSTEM:
+                return system(message.content)
+            case AiRole.ASSISTANT:
+                return assistant(message.content)
+            case AiRole.USER:
+                if message.name:
+                    return user(f"{message.name}: {message.content}")
+                return user(message.content)
+            case _:
+                raise NotImplementedError("Unsupported AI message role for Grok conversion")
 
     def _get_client(self) -> AsyncClient:
-        return AsyncClient(api_key=self._settings.grok_api_key, timeout=3600)
+        if self._client is None:
+            api_key = self._settings.api_key
+            if not api_key:
+                msg = "Grok API key is not configured"
+                raise ValueError(msg)
+            self._client = AsyncClient(api_key=api_key, timeout=3600)
+        return self._client

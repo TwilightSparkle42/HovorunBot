@@ -6,6 +6,7 @@ from typing import Final
 from injector import Inject
 from pydantic import BaseModel
 from telegram import Chat, Message, Update, User
+from valkey.exceptions import ValkeyError
 
 from cache.valkey import ValkeyCache
 from logging_config.common import WithLogger
@@ -62,7 +63,7 @@ class TelegramUpdateStorage(WithLogger):
             if record.chat_id is not None:
                 await self._index_update(record)
             self._logger.debug("Stored telegram update %s in cache", record.update_id)
-        except Exception as exc:
+        except ValkeyError as exc:
             self._logger.warning("Failed to store telegram update %s: %s", record.update_id, exc)
 
     async def get_last_messages(
@@ -87,7 +88,7 @@ class TelegramUpdateStorage(WithLogger):
         fetch_count = min(limit, self._MAX_HISTORY_FETCH)
         try:
             raw_update_ids = await self._client.zrevrange(chat_key, 0, fetch_count - 1)
-        except Exception as exc:
+        except ValkeyError as exc:
             self._logger.warning("Failed to fetch cached updates for chat %s: %s", chat_id, exc)
             return []
 
@@ -177,7 +178,7 @@ class TelegramUpdateStorage(WithLogger):
         try:
             await self._client.zadd(chat_key, {str(record.update_id): record.received_at.timestamp()})
             await self._client.expire(chat_key, self._TTL)
-        except Exception as exc:
+        except ValkeyError as exc:
             self._logger.debug(
                 "Failed to index telegram update %s for chat %s: %s",
                 record.update_id,

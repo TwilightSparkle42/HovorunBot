@@ -10,8 +10,10 @@
 - [ ] Introduce module autodiscovery to avoid direct modules declarations in `di_config.py`
 
 ## 2. Chat-Level AI Configuration
-- [ ] Extend chat persistence to store system prompts, default model, and sampling parameters so each chat can tune
+- [x] Extend chat persistence to store system prompts, default model, and sampling parameters so each chat can tune
   behaviour.
+- [x] Introduce a structured chat configuration entity that persists provider selection, LLM model slug, system
+  instructions, and key sampling controls (temperature, top_p, max_tokens, penalties) per chat.
 - [ ] Update AI-facing handlers to hydrate prompts/settings from chat config instead of relying on hard-coded strings.
 - [ ] Add validation/admin tooling (commands or control panel) for managing chat-specific AI profiles.
 - [ ] Expose commands or other self-service flows so chats can update configuration without direct database access.
@@ -35,3 +37,7 @@
 - [ ] Explore queueing or rate-limiting per provider to manage API budget and avoid hitting rate limits.
 - [ ] Build a lightweight web admin panel for managing chat access records and AI configuration.
 - [ ] Evaluate long-term database options so the service can migrate away from SQLite when requirements evolve.
+
+## 6. Bot Functionality
+- [ ] Add a way to parse specified text links to news, and create a short explanation of the content
+- [ ] Subscription for streams, notification that any stream that is registered in chat is started 

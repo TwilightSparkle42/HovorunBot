@@ -4,7 +4,7 @@ from telegram import Update
 
 from bot_runtime.message_handlers.base import BaseHandler, HandlersRegistry
 from bot_types import Context
-from database.models import ChatAccess
+from database.models import ChatConfiguration
 from logging_config.common import WithLogger
 from utils.dependable import sort_topologically
 
@@ -28,7 +28,7 @@ class MessageHandlerPipeline(WithLogger):
         return tuple(self._build_ordered_handlers())
 
     async def dispatch(
-        self, update: Update, context: Context, chat_settings: ChatAccess | None, *, chat_id: int | None
+        self, update: Update, context: Context, chat_settings: ChatConfiguration | None, *, chat_id: int | None
     ) -> bool:
         """
         Run the pipeline for the given update.

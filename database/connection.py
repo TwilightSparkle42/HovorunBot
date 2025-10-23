@@ -1,8 +1,11 @@
-from __future__ import annotations
+from typing import Any, cast
 
 from injector import Inject
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import ORMExecuteState, Session, with_loader_criteria
 
+from database.base import DeletableMixin
 from settings.database import DatabaseSettings
 
 
@@ -40,7 +43,44 @@ class DatabaseConnection:
 
         :returns: Async session maker with commit expiry disabled.
         """
-        return async_sessionmaker(
+        session_factory = async_sessionmaker(
             bind=self._engine,
             expire_on_commit=False,
         )
+        self._register_session_listeners(session_factory)
+        return session_factory
+
+    @staticmethod
+    def _register_session_listeners(session_factory: async_sessionmaker[AsyncSession]) -> None:
+        """
+        Attach event listeners to implement application-wide behaviours for ORM sessions.
+
+        Listeners handle soft-delete semantics and ensure deleted rows are hidden from default queries.
+        """
+
+        sync_session_class = cast(
+            type[Session],
+            getattr(session_factory, "sync_session_class", Session),
+        )
+
+        @event.listens_for(sync_session_class, "before_flush", propagate=True)
+        def _handle_soft_delete(session: Session, flush_context: Any, _instances: Any) -> None:
+            del flush_context, _instances
+            for instance in list(session.deleted):
+                if isinstance(instance, DeletableMixin):
+                    instance.mark_deleted()
+                    session.add(instance)
+                    session.deleted.discard(instance)
+
+        @event.listens_for(sync_session_class, "do_orm_execute", propagate=True)
+        def _filter_deleted(execute_state: ORMExecuteState) -> None:
+            if not execute_state.is_select or execute_state.execution_options.get("include_deleted", False):
+                return
+
+            execute_state.statement = execute_state.statement.options(
+                with_loader_criteria(
+                    DeletableMixin,
+                    lambda cls: cls.deleted.is_(False),
+                    include_aliases=True,
+                )
+            )

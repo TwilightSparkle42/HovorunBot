@@ -1,7 +1,7 @@
 __all__ = ["TelegramHandlerRegistration", "TelegramHandlersSet"]
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Sequence
 
 from telegram.ext import Application
 from telegram.ext import BaseHandler as TelegramBaseHandler
@@ -9,7 +9,7 @@ from telegram.ext import BaseHandler as TelegramBaseHandler
 if TYPE_CHECKING:
     from bot_runtime.runtime import BotRuntime
 
-HandlerFactory = Callable[["BotRuntime"], TelegramBaseHandler]
+HandlerFactory = Callable[["BotRuntime"], TelegramBaseHandler[Any, Any, Any]]
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class TelegramHandlerRegistration:
     factory: HandlerFactory
     group: int | None = None
 
-    def build(self, runtime: "BotRuntime") -> TelegramBaseHandler:
+    def build(self, runtime: "BotRuntime") -> TelegramBaseHandler[Any, Any, Any]:
         handler = self.factory(runtime)
         if handler is None:
             raise ValueError("Telegram handler factory returned None.")
@@ -39,7 +39,7 @@ class TelegramHandlersSet:
     def __init__(self, registrations: Sequence[TelegramHandlerRegistration]) -> None:
         self._registrations = list(registrations)
 
-    def register_all(self, application: Application, runtime: BotRuntime) -> None:
+    def register_all(self, application: Application[Any, Any, Any, Any, Any, Any], runtime: "BotRuntime") -> None:
         """
         Register all configured handlers against the provided application instance.
 
