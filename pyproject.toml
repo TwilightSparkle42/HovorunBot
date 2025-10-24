@@ -44,6 +44,9 @@ dependencies = [
 Homepage = "https://github.com/TwilightSparkle42/HovorunBot"
 Repository = "https://github.com/TwilightSparkle42/HovorunBot"
 
+[project.scripts]
+hovorun = "cli:main"
+
 [tool.ruff]
 target-version = "py314"
 line-length = 120
@@ -81,4 +84,34 @@ plugins = [
 dev = [
     "mypy>=1.18.2",
     "ruff>=0.14.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+
+[tool.hatch.build]
+# Include project resources and metadata in distributions
+# Code packages are already included via [tool.hatch.build.targets.wheel]
+include = [
+    "README.md",
+    "AGENTS.md",
+    "LICENSE",
+    "roadmap.md",
+    "alembic.ini",
+    "migrations/**",
+    "docker-compose.yml",
+    "example.env",
+]
+# Exclude files and directories that are in .gitignore or otherwise not intended for distribution
+exclude = [
+    "/.idea/**",
+    "/.env",
+    "/askbro.db",
+    "/cache/valkey/**",
+    "/local_admin.txt",
 ]
