@@ -1,7 +1,7 @@
 [project]
 name = "HovorunBot"
 version = "0.0.0a0.dev2"
-description = "Simple telegram bot to integrate AI activities to your group chats"
+description = "AI Sidekick for Telegram Chats"
 readme = "README.md"
 requires-python = ">=3.14"
 authors = [
