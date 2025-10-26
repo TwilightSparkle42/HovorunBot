@@ -4,12 +4,7 @@ from injector import Injector
 
 from ai_client.module import AiClientModule
 from bot_runtime.module import BotRuntimeModule
-from cache.module import CacheModule
-from database.module import DatabaseModule
 from errors import ConfigError
-from logging_config.module import LoggingModule
-from management.module import ManagementModule
-from settings.module import SettingsModule
 
 _injector: Injector | None = None
 _injector_lock = Lock()
@@ -21,15 +16,7 @@ def setup_di() -> Injector:
 
     :returns: The configured :class:`injector.Injector` singleton.
     """
-    module_classes = [
-        SettingsModule,
-        LoggingModule,
-        AiClientModule,
-        BotRuntimeModule,
-        DatabaseModule,
-        CacheModule,
-        ManagementModule,
-    ]
+    module_classes = [AiClientModule, BotRuntimeModule]
 
     global _injector
     with _injector_lock:

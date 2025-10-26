@@ -1,5 +1,7 @@
 import os
+from typing import Self
 
+from injector import provider, singleton
 from pydantic_settings import SettingsConfigDict
 
 from .base import SettingsBase
@@ -20,3 +22,9 @@ class CacheSettings(SettingsBase):
     host: str = "localhost"
     port: int = 6379
     db: int = 0
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls) -> Self:
+        return cls()

@@ -1,5 +1,7 @@
 import os
+from typing import Self
 
+from injector import provider, singleton
 from pydantic import AliasChoices, Field
 from pydantic_settings import SettingsConfigDict
 
@@ -36,3 +38,9 @@ class GrokSettings(GeneralAiSettings):
     stop_sequences: list[str] | None = Field(default=None, validation_alias=_grok_alias("STOP_SEQUENCES"))
     seed: int | None = Field(default=None, validation_alias=_grok_alias("SEED"))
     response_format: str | None = Field(default=None, validation_alias=_grok_alias("RESPONSE_FORMAT"))
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls) -> Self:
+        return cls()

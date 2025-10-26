@@ -1,11 +1,12 @@
 import asyncio
 import secrets
 from dataclasses import dataclass
+from typing import Self
 
 import bcrypt
-from injector import Inject
+from injector import inject, provider, singleton
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from database.connection import DatabaseConnection
 from database.models.base import BaseModel
@@ -33,9 +34,16 @@ class SuperuserCreator:
     Uses the app's async SQLAlchemy engine/session via DI.
     """
 
-    def __init__(self, database: Inject[DatabaseConnection]) -> None:
-        self._session_factory: async_sessionmaker[AsyncSession] = database.session_factory
-        self._engine: AsyncEngine = database.engine
+    @inject
+    def __init__(self, db_connection: DatabaseConnection) -> None:
+        self._session_factory = db_connection.session_maker
+        self._engine: AsyncEngine = db_connection.engine
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls, db_connection: DatabaseConnection) -> Self:
+        return cls(db_connection)
 
     async def _ensure_schema(self) -> None:
         """Ensure database schema exists (SQLite only; safe for first-run setup)."""

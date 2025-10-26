@@ -1,25 +1,29 @@
-from injector import Inject
+from sqlite3 import IntegrityError
+from typing import Self
+
+from injector import inject, provider, singleton
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from database.connection import DatabaseConnection
 from database.models import Chat, ChatConfiguration, Model, ModelConfiguration, Provider
 from errors import ConfigError
 
-UNKNOWN_CHAT_TYPE = "unknown"
 
+# TODO: refactor it to separate service methods
+class ChatService:
+    UNKNOWN_CHAT_TYPE = "unknown"
 
-class ChatConfigurationRepository:
-    """
-    Persistence helper for chat configuration records.
+    @inject
+    def __init__(self, db_connection: DatabaseConnection) -> None:
+        self._db_connection = db_connection
 
-    The repository coordinates asynchronous session management for CRUD operations on
-    :class:`database.models.ChatConfiguration`.
-    """
-
-    def __init__(self, session_factory: Inject[async_sessionmaker[AsyncSession]]) -> None:
-        self._session_factory = session_factory
+    @classmethod
+    @provider
+    @singleton
+    def build(cls, db_connection: DatabaseConnection) -> Self:
+        return cls(db_connection)
 
     async def ensure_exists(
         self,
@@ -36,7 +40,7 @@ class ChatConfigurationRepository:
         :param chat_type: Telegram chat type (e.g. "private", "supergroup").
         :returns: The persisted :class:`ChatConfiguration` row or ``None`` if the lookup fails after conflict handling.
         """
-        async with self._session_factory() as session:
+        async with self._db_connection.session_maker() as session:
             instance = await self._get_by_chat_id(session, chat_id)
             if instance is not None:
                 chat = await self._ensure_chat_entity(
@@ -65,7 +69,7 @@ class ChatConfigurationRepository:
             chat = Chat(
                 telegram_chat_id=chat_id,
                 title=title,
-                chat_type=chat_type or UNKNOWN_CHAT_TYPE,
+                chat_type=chat_type or self.UNKNOWN_CHAT_TYPE,
             )
             session.add(chat)
 
@@ -88,7 +92,7 @@ class ChatConfigurationRepository:
         :param chat_id: Identifier of the chat requesting access.
         :returns: ``True`` when the chat is authorised; otherwise ``False``.
         """
-        async with self._session_factory() as session:
+        async with self._db_connection.session_maker() as session:
             record = await self._get_by_chat_id(session, chat_id)
             return bool(record and record.allowed)
 
@@ -146,7 +150,7 @@ class ChatConfigurationRepository:
                 id=configuration.chat_id,
                 telegram_chat_id=telegram_chat_id,
                 title=title,
-                chat_type=chat_type or UNKNOWN_CHAT_TYPE,
+                chat_type=chat_type or self.UNKNOWN_CHAT_TYPE,
             )
             session.add(chat)
             configuration.chat = chat

@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
+from typing import Self
 
+from injector import provider, singleton
 from pydantic import field_validator
 
 from .base import SettingsBase
@@ -50,3 +52,9 @@ class DatabaseSettings(SettingsBase):
         if not value.startswith("sqlite+aiosqlite://"):
             raise ValueError("database_url must use the sqlite+aiosqlite driver")
         return value
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls) -> Self:
+        return cls()

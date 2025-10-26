@@ -12,9 +12,6 @@ class AiClientModule(Module):
     """
 
     def configure(self, binder: Binder) -> None:
-        binder.bind(GrokAiClient, to=GrokAiClient, scope=singleton)
-
         registry = AiClientRegistry()
-        registry.register(GrokAiClient.get_name(), binder.injector.get(GrokAiClient))
-
+        registry.register(GrokAiClient.get_name(), binder.injector.create_object(GrokAiClient))
         binder.bind(AiClientRegistry, to=registry, scope=singleton)

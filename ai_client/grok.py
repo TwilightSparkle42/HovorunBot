@@ -1,7 +1,7 @@
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
-from injector import Inject
+from injector import Inject, inject, provider, singleton
 from xai_sdk import AsyncClient  # type: ignore[import-untyped]
 from xai_sdk.chat import assistant, system, user  # type: ignore[import-untyped]
 
@@ -18,9 +18,16 @@ logger = logging.getLogger(__name__)
 
 
 class GrokAiClient(BaseAiClient[GrokSettings]):
-    def __init__(self, settings: Inject[GrokSettings]) -> None:
+    @inject
+    def __init__(self, settings: GrokSettings) -> None:
         super().__init__(settings)
         self._client: AsyncClient | None = None
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls, settings: Inject[GrokSettings]) -> Self:
+        return cls(settings)
 
     async def answer(
         self,

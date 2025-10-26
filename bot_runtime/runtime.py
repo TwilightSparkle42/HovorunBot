@@ -8,10 +8,10 @@ from bot_runtime.message_pipeline import MessageHandlerPipeline
 from bot_runtime.telegram_handlers import TelegramHandlersSet
 from bot_types import Context
 from cache.telegram_update_storage import TelegramUpdateStorage
-from database.chat_configuration_repository import ChatConfigurationRepository
 from database.models import ChatConfiguration
 from errors import ConfigError
 from logging_config.common import WithLogger
+from services.chat_service import ChatService
 from settings.bot import TelegramSettings
 
 
@@ -21,8 +21,8 @@ class BotRuntime(WithLogger):
         telegram_settings: Inject[TelegramSettings],
         telegram_handlers: Inject[TelegramHandlersSet],
         message_pipeline: Inject[MessageHandlerPipeline],
-        chat_configuration_repository: Inject[ChatConfigurationRepository],
         update_storage: Inject[TelegramUpdateStorage],
+        chat_service: Inject[ChatService],
     ) -> None:
         self._settings = telegram_settings
         if self._settings.telegram_token is None:
@@ -30,8 +30,8 @@ class BotRuntime(WithLogger):
         self._application = Application.builder().token(self._settings.telegram_token).build()
         self._telegram_handlers = telegram_handlers
         self._message_pipeline = message_pipeline
-        self._chat_configuration_repository = chat_configuration_repository
         self._update_storage = update_storage
+        self._chat_service = chat_service
         self.add_handlers()
 
     def add_handlers(self) -> None:
@@ -72,7 +72,7 @@ class BotRuntime(WithLogger):
         chat = update.effective_chat
         if chat is None:
             return None
-        return await self._chat_configuration_repository.ensure_exists(
+        return await self._chat_service.ensure_exists(
             str(chat.id),
             title=chat.title,
             chat_type=chat.type,

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Final
 
-from injector import Inject
+from injector import inject, provider, singleton
 from pydantic import BaseModel
 from telegram import Chat, Message, Update, User
 from valkey.exceptions import ValkeyError
@@ -43,8 +43,15 @@ class TelegramUpdateStorage(WithLogger):
 
     _MAX_HISTORY_FETCH: Final[int] = 200
 
-    def __init__(self, cache: Inject[ValkeyCache]) -> None:
+    @inject
+    def __init__(self, cache: ValkeyCache) -> None:
         self._client = cache.client
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls, cache: ValkeyCache) -> TelegramUpdateStorage:
+        return cls(cache=cache)
 
     async def store(self, update: Update) -> None:
         """

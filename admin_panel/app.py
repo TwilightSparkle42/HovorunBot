@@ -1,11 +1,24 @@
-from fastadmin import fastapi_app as admin_app  # type: ignore[import-untyped]
+"""FastAPI application entry point for the admin panel."""
+
 from fastapi import FastAPI
 
-from .admin_models import *  # noqa: F401, F403
+from admin_panel.auth_backend import AdminPanelAuthBackend
+from admin_panel.views.user import UserAdmin
+from di_config import get_injector
 
-# Main application for our project
+from .common import Admin
+from .views.chat import ChatAdmin
+
 app = FastAPI()
 
+injector = get_injector()
 
-# Mount FastAdmin's FastAPI application under /admin
-app.mount("/admin", admin_app)
+auth_backend = injector.create_object(AdminPanelAuthBackend)
+
+admin = injector.create_object(
+    Admin,
+    additional_kwargs={"app": app, "authentication_backend": auth_backend},
+)
+
+admin.add_view(UserAdmin)
+admin.add_view(ChatAdmin)

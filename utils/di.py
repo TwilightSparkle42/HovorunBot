@@ -1,4 +1,6 @@
-from typing import Any
+__all__ = ["Registry", "PLACEHOLDER"]
+
+from typing import Any, NoReturn
 
 
 class Registry[K, T]:
@@ -31,3 +33,13 @@ class Registry[K, T]:
 
     def as_dict(self) -> dict[K, T]:
         return self._objects
+
+
+class Placeholder:
+    """Marker class for dependency injection. It isn't supposed to be accessed during runtime"""
+
+    def __getattribute__(self, item: str) -> NoReturn:
+        raise TypeError(f"Specific dependency is not injected. Access to {item} is forbidden.")
+
+
+PLACEHOLDER: Any = Placeholder()

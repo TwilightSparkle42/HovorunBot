@@ -1,10 +1,9 @@
-from __future__ import annotations
-
 import logging
 from logging.config import dictConfig
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from settings.logging import LoggingSettings
+if TYPE_CHECKING:
+    from settings.logging import LoggingSettings
 
 _configured = False
 

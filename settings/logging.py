@@ -1,6 +1,8 @@
-from __future__ import annotations
+__all__ = ["LoggingSettings", "LogLevel"]
 
-from typing import Literal
+from typing import Literal, Self
+
+from injector import provider, singleton
 
 from settings.base import SettingsBase
 
@@ -18,5 +20,8 @@ class LoggingSettings(SettingsBase):
     format: str = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     datefmt: str = "%Y-%m-%dT%H:%M:%S%z"
 
-
-__all__ = ["LoggingSettings", "LogLevel"]
+    @classmethod
+    @provider
+    @singleton
+    def build(cls) -> Self:
+        return cls()

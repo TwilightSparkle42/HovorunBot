@@ -1,6 +1,7 @@
 import os
 from typing import Self
 
+from injector import provider, singleton
 from pydantic import model_validator
 from pydantic_settings import SettingsConfigDict
 
@@ -47,3 +48,9 @@ class GeneralAiSettings(SettingsBase):
         if self.default_model is None:
             raise ConfigError(f"default_model is not set for {self.__class__.__name__}.")
         return self
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls) -> Self:
+        return cls()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from injector import Inject
+from injector import inject, provider, singleton
 from valkey.asyncio import Valkey
 
 from settings.cache import CacheSettings
@@ -13,9 +13,16 @@ class ValkeyCache:
     The client is configured eagerly during construction and reused through the lifetime of the application.
     """
 
-    def __init__(self, settings: Inject[CacheSettings]) -> None:
+    @inject
+    def __init__(self, settings: CacheSettings) -> None:
         self._settings = settings
         self._client = self._create_client()
+
+    @classmethod
+    @provider
+    @singleton
+    def build(cls, settings: CacheSettings) -> ValkeyCache:
+        return cls(settings)
 
     @property
     def client(self) -> Valkey:

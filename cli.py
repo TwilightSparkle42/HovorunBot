@@ -6,20 +6,25 @@ Commands:
 - bot — start Telegram bot runtime
 - admin — start admin FastAPI server
 - createsuperuser — create or ensure the initial superuser exists
+- upgrade-htmx — fetch the latest minified HTMX asset
 
 Usage examples:
 - hovorun bot
 - hovorun admin
 - hovorun createsuperuser [-u USERNAME]
+- hovorun upgrade-htmx
 
 The same commands work when executed via a runner like `uv`.
 """
+
 import importlib
 import sys
 
 from bot_runtime.runtime import BotRuntime
 from di_config import setup_di
+from logging_config import configure_logging
 from management.superuser_service import SuperuserCreator, create_superuser_sync
+from settings.logging import LoggingSettings
 
 
 def bot() -> None:
@@ -34,9 +39,9 @@ def api() -> None:
 
     Runs the ASGI app defined in ``admin_panel.app``.
     """
-    uvicorn = importlib.import_module('uvicorn')
+    uvicorn = importlib.import_module("uvicorn")
     _ = setup_di()  # ensure DI initialized; admin models may depend on it
-    uvicorn.run('admin_panel.app:app', host='localhost', port=8000, reload=False)
+    uvicorn.run("admin_panel.app:app", host="localhost", port=8000, reload=False)
 
 
 def createsuperuser() -> None:
@@ -48,18 +53,25 @@ def createsuperuser() -> None:
     injector = setup_di()
     creator = injector.get(SuperuserCreator)
 
-    username = 'admin'
+    username = "admin"
     args = sys.argv[2:]
     for i, arg in enumerate(args):
-        if arg in {'--username', '-u'} and i + 1 < len(args):
+        if arg in {"--username", "-u"} and i + 1 < len(args):
             username = args[i + 1]
             break
 
     result = create_superuser_sync(creator, username=username)
     if result.created and result.password is not None:
-        print(f'Superuser created: {result.username}\nPassword: {result.password}')
+        print(f"Superuser created: {result.username}\nPassword: {result.password}")
     else:
-        print(f'Superuser already exists: {result.username}')
+        print(f"Superuser already exists: {result.username}")
+
+
+registry = {
+    "bot": bot,
+    "admin": api,
+    "createsuperuser": createsuperuser,
+}
 
 
 def main() -> None:
@@ -69,17 +81,15 @@ def main() -> None:
     - ``bot`` — start Telegram bot runtime
     - ``admin`` — start admin FastAPI server
     - ``createsuperuser`` — create or ensure the initial superuser exists
+    - ``upgrade-htmx`` — fetch the latest minified HTMX asset
     """
     if len(sys.argv) == 1:
-        raise ValueError('Missing command. Use `bot`, `admin`, or `createsuperuser`.')
+        raise ValueError(f"Missing command. Use one of following: {', '.join(registry)}")
+
+    injector = setup_di()
+    configure_logging(injector.get(LoggingSettings))
 
     cmd = sys.argv[1].lower()
-    match cmd:
-        case 'admin':
-            api()
-        case 'bot':
-            bot()
-        case 'createsuperuser':
-            createsuperuser()
-        case _:
-            raise ValueError('Unknown command. Use `bot`, `admin`, or `createsuperuser`.')
+    if cmd not in registry:
+        raise ValueError(f"Unknown command: {cmd}. Use one of following: {', '.join(registry)}")
+    registry[cmd]()
