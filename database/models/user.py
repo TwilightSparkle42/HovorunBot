@@ -7,7 +7,7 @@ from .base import BaseModel
 class User(BaseModel):
     __tablename__ = "user"
 
-    username: Mapped[str] = mapped_column(String(length=255), nullable=False)
+    username: Mapped[str] = mapped_column(String(length=255), nullable=False, unique=True)
     hash_password: Mapped[str] = mapped_column(String(length=255), nullable=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=false(), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=false(), nullable=False)

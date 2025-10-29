@@ -1,3 +1,5 @@
+__all__ = ["setup_di", "get_injector"]
+
 from threading import Lock
 
 from injector import Injector

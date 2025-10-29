@@ -34,10 +34,10 @@ dependencies = [
     "greenlet>=3.2.4",
     "uvicorn>=0.38.0",
     "bcrypt>=5.0.0",
-    "sqladmin[full]>=0.21.0",
     "fastapi>=0.120.0",
     "starlette[full]>=0.48.0",
     "passlib[bcrypt]>=1.7.4",
+    "fastadmin[fastapi,sqlalchemy]>=0.2.22",
 ]
 
 [project.urls]

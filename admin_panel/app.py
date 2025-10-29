@@ -1,24 +1,15 @@
 """FastAPI application entry point for the admin panel."""
 
+from fastadmin import fastapi_app as admin_app  # type: ignore[import-untyped]
 from fastapi import FastAPI
+from starlette.responses import RedirectResponse
 
-from admin_panel.auth_backend import AdminPanelAuthBackend
-from admin_panel.views.user import UserAdmin
-from di_config import get_injector
-
-from .common import Admin
-from .views.chat import ChatAdmin
+from .admin_models.user import UserAdmin  # noqa: F401
 
 app = FastAPI()
+app.mount("/admin", admin_app)
 
-injector = get_injector()
 
-auth_backend = injector.create_object(AdminPanelAuthBackend)
-
-admin = injector.create_object(
-    Admin,
-    additional_kwargs={"app": app, "authentication_backend": auth_backend},
-)
-
-admin.add_view(UserAdmin)
-admin.add_view(ChatAdmin)
+@app.get("/")
+def home_page() -> RedirectResponse:
+    return RedirectResponse("/admin")
